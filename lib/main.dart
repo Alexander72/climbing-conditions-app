@@ -1,11 +1,21 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'presentation/providers/crag_provider.dart';
 import 'presentation/providers/weather_provider.dart';
 import 'presentation/providers/condition_provider.dart';
 import 'presentation/screens/home_screen.dart';
 
 void main() {
+  // Required for sqflite on desktop and web. On Android/iOS the default factory is used.
+  if (kIsWeb) {
+    databaseFactory = databaseFactoryFfiWeb;
+  } else {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
   runApp(const ClimbingApp());
 }
 

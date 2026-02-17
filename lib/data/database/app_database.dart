@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/crag_model.dart';
@@ -21,14 +22,29 @@ class AppDatabase {
   }
 
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'climbing_app.db');
+    // On web, getDatabasesPath() is null; use a simple name (stored in IndexedDB).
+    // On desktop/mobile, use the normal documents path.
+    final String path;
+    if (kIsWeb) {
+      path = 'climbing_app.db';
+    } else {
+      final dbPath = await getDatabasesPath();
+      path = join(dbPath, 'climbing_app.db');
+    }
 
     return await openDatabase(
       path,
       version: 1,
       onCreate: _onCreate,
       onOpen: _onOpen,
+    );
+  }
+
+  /// Removes null values from a map. sqflite_common_ffi_web worker does not
+  /// support null in serialization; omitting the key leaves the column as NULL.
+  static Map<String, Object> _sanitizeMap(Map<String, dynamic> map) {
+    return Map.fromEntries(
+      map.entries.where((e) => e.value != null).map((e) => MapEntry(e.key, e.value as Object)),
     );
   }
 
@@ -45,7 +61,7 @@ class AppDatabase {
       for (final crag in seedData) {
         batch.insert(
           'crags',
-          crag.toJson(),
+          _sanitizeMap(crag.toJson()),
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
@@ -106,7 +122,7 @@ class AppDatabase {
     final db = await database;
     await db.insert(
       'crags',
-      crag.toJson(),
+      _sanitizeMap(crag.toJson()),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -117,7 +133,7 @@ class AppDatabase {
     for (final crag in crags) {
       batch.insert(
         'crags',
-        crag.toJson(),
+        _sanitizeMap(crag.toJson()),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }

@@ -49,12 +49,14 @@ class CragRepository implements CragRepositoryInterface {
     await _database.deleteCrag(id);
   }
 
+  static const String _defaultCountry = 'Belgium';
+
   @override
   Future<void> refreshCrags({String? country, String? region}) async {
     try {
-      // Fetch crags from OpenBeta
+      // Fetch crags from OpenBeta (default to Belgium when not specified)
       final fetchedCrags = await _apiClient.fetchCragsByRegion(
-        country: country,
+        country: country ?? _defaultCountry,
         region: region,
       );
 

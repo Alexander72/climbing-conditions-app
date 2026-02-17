@@ -13,11 +13,14 @@ class OpenBetaApiClient {
   OpenBetaApiClient({http.Client? client})
       : _client = client ?? http.Client();
 
+  static const String defaultCountry = 'Belgium';
+
   Future<List<CragModel>> fetchCragsByRegion({
     String? country,
     String? region,
   }) async {
-    final query = _buildGraphQLQuery(country: country, region: region);
+    final effectiveCountry = country ?? defaultCountry;
+    final query = _buildGraphQLQuery(country: effectiveCountry, region: region);
 
     try {
       final response = await _client.post(
@@ -43,12 +46,13 @@ class OpenBetaApiClient {
     }
   }
 
-  String _buildGraphQLQuery({String? country, String? region}) {
-    // Build GraphQL query to fetch areas/crags
-    // This is a simplified query - adjust based on actual OpenBeta schema
+  String _buildGraphQLQuery({required String country, String? region}) {
+    // OpenBeta Filter type uses area_name: { match: "..." }, not "countries"
+    final searchName = region?.isNotEmpty == true ? region! : country;
+    final escaped = searchName.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
     return '''
       query GetCrags {
-        areas(filter: {countries: ${country != null ? '["$country"]' : 'null'}}) {
+        areas(filter: { area_name: { match: "$escaped" } }) {
           area_name
           metadata {
             lat
