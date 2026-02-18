@@ -25,8 +25,9 @@ class CragProvider with ChangeNotifier {
       // Database initialization will load seed data automatically
       // Just load all crags (preloaded + fetched)
       await loadCrags();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = 'Failed to initialize crags: $e';
+      debugPrint('[CragProvider] initialize() failed\n  Error: $e\n  Cause: ${e.runtimeType}\n  StackTrace:\n$stackTrace');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -40,8 +41,9 @@ class CragProvider with ChangeNotifier {
 
     try {
       _crags = await _repository.getAllCrags();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = 'Failed to load crags: $e';
+      debugPrint('[CragProvider] loadCrags() failed\n  Error: $e\n  Cause: ${e.runtimeType}\n  StackTrace:\n$stackTrace');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -56,8 +58,9 @@ class CragProvider with ChangeNotifier {
     try {
       await _repository.refreshCrags(country: country, region: region);
       await loadCrags();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = 'Failed to refresh crags: $e';
+      debugPrint('[CragProvider] refreshCrags() failed\n  Error: $e\n  Cause: ${e.runtimeType}\n  StackTrace:\n$stackTrace');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -68,8 +71,9 @@ class CragProvider with ChangeNotifier {
     try {
       await _repository.addCrag(crag);
       await loadCrags();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = 'Failed to add crag: $e';
+      debugPrint('[CragProvider] addCrag() failed for crag id=${crag.id}\n  Error: $e\n  Cause: ${e.runtimeType}\n  StackTrace:\n$stackTrace');
       notifyListeners();
     }
   }
@@ -78,8 +82,9 @@ class CragProvider with ChangeNotifier {
     try {
       await _repository.deleteCrag(id);
       await loadCrags();
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = 'Failed to delete crag: $e';
+      debugPrint('[CragProvider] deleteCrag() failed for id=$id\n  Error: $e\n  Cause: ${e.runtimeType}\n  StackTrace:\n$stackTrace');
       notifyListeners();
     }
   }

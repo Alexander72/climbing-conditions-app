@@ -44,7 +44,7 @@ class WeatherChart extends StatelessWidget {
                   barTouchData: BarTouchData(
                     enabled: true,
                     touchTooltipData: BarTouchTooltipData(
-                      tooltipRoundedRadius: 8,
+                      tooltipBorderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   titlesData: FlTitlesData(

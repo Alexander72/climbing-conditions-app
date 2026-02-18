@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # API calls
-  http: ^1.1.0
+  http: ^1.6.0
   
   # OpenBeta GraphQL API
   graphql_flutter: ^5.2.0
@@ -45,27 +45,26 @@ dependencies:
   provider: ^6.1.1
   
   # Local database
-  sqflite: ^2.3.0
-  sqflite_common_ffi: ^2.3.0
-  sqflite_common_ffi_web: ^0.4.0
-  path: ^1.8.3
+  sqflite: ^2.4.2
+  sqflite_common_ffi: ^2.4.0
+  sqflite_common_ffi_web: ^1.1.1
+  path: ^1.9.1
   
   # Date formatting
-  intl: ^0.18.1
+  intl: ^0.20.1
   
   # Location services
-  geolocator: ^10.1.0
+  geolocator: ^14.0.2
   
   # Interactive map for crag selection
-  flutter_map: ^6.0.0
-  flutter_map_cancellable_tile_provider: ^2.0.0
+  flutter_map: ^8.2.2
   latlong2: ^0.9.0
   
   # Charts for weather visualization
-  fl_chart: ^0.65.0
+  fl_chart: ^1.1.1
   
   # JSON serialization
-  json_annotation: ^4.8.1
+  json_annotation: ^4.10.0
 
 dev_dependencies:
   flutter_test:
@@ -79,8 +78,8 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   
   # JSON serialization code generation
-  build_runner: ^2.4.7
-  json_serializable: ^6.7.1
+  build_runner: ^2.11.1
+  json_serializable: ^6.12.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
