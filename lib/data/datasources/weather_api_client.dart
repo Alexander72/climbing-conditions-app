@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import '../models/weather_model.dart';
 import '../../core/config.dart';
@@ -30,13 +31,33 @@ class WeatherApiClient {
       },
     );
 
+    developer.log(
+      'Calling weather API\n'
+      '  Host:     ${uri.scheme}://${uri.host}\n'
+      '  Endpoint: ${uri.path}\n'
+      '  Params:   lat=${latitude}, lon=${longitude}, units=metric, '
+      'appid=${_apiKey.isEmpty ? "<empty>" : "${_apiKey.substring(0, 4)}...${_apiKey.substring(_apiKey.length - 4)}"}',
+      name: 'WeatherApiClient',
+    );
+
     try {
       final response = await _client.get(uri);
+
+      developer.log(
+        'Weather API response: ${response.statusCode}\n'
+        '  URL: ${uri.toString().replaceAll(_apiKey, "<redacted>")}',
+        name: 'WeatherApiClient',
+      );
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body) as Map<String, dynamic>;
         return _parseWeatherResponse(jsonData);
       } else {
+        developer.log(
+          'Weather API error body: ${response.body}',
+          name: 'WeatherApiClient',
+          level: 900, // warning level
+        );
         throw Exception(
           'Failed to fetch weather: ${response.statusCode} - ${response.body}',
         );

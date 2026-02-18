@@ -40,12 +40,28 @@ class AppDatabase {
     );
   }
 
-  /// Removes null values from a map. sqflite_common_ffi_web worker does not
-  /// support null in serialization; omitting the key leaves the column as NULL.
+  /// Removes null values and JSON-encodes List values from a map.
+  /// sqflite_common_ffi_web does not support null or List in its serialization
+  /// protocol; nulls are omitted (leaving the column NULL) and lists are stored
+  /// as JSON text.
   static Map<String, Object> _sanitizeMap(Map<String, dynamic> map) {
     return Map.fromEntries(
-      map.entries.where((e) => e.value != null).map((e) => MapEntry(e.key, e.value as Object)),
+      map.entries.where((e) => e.value != null).map((e) {
+        final value = e.value is List ? jsonEncode(e.value) : e.value;
+        return MapEntry(e.key, value as Object);
+      }),
     );
+  }
+
+  /// Decodes JSON-encoded list columns back to Dart lists so that
+  /// CragModel.fromJson receives the expected types.
+  static Map<String, dynamic> _deserializeCragMap(Map<String, dynamic> map) {
+    return {
+      ...map,
+      'climbingTypes': map['climbingTypes'] is String
+          ? jsonDecode(map['climbingTypes'] as String)
+          : map['climbingTypes'],
+    };
   }
 
   Future<void> _onOpen(Database db) async {
@@ -143,7 +159,7 @@ class AppDatabase {
   Future<List<CragModel>> getAllCrags() async {
     final db = await database;
     final maps = await db.query('crags');
-    return maps.map((map) => CragModel.fromJson(map)).toList();
+    return maps.map((map) => CragModel.fromJson(_deserializeCragMap(map))).toList();
   }
 
   Future<List<CragModel>> getCragsBySource(String source) async {
@@ -153,7 +169,7 @@ class AppDatabase {
       where: 'source = ?',
       whereArgs: [source],
     );
-    return maps.map((map) => CragModel.fromJson(map)).toList();
+    return maps.map((map) => CragModel.fromJson(_deserializeCragMap(map))).toList();
   }
 
   Future<CragModel?> getCragById(String id) async {
@@ -165,7 +181,7 @@ class AppDatabase {
       limit: 1,
     );
     if (maps.isEmpty) return null;
-    return CragModel.fromJson(maps.first);
+    return CragModel.fromJson(_deserializeCragMap(maps.first));
   }
 
   Future<void> deleteCrag(String id) async {
