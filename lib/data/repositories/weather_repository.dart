@@ -1,17 +1,17 @@
 import '../../domain/repositories/weather_repository_interface.dart';
 import '../../domain/entities/weather.dart';
-import '../datasources/weather_api_client.dart';
+import '../datasources/backend_api_client.dart';
 import '../database/app_database.dart';
 import '../../core/config.dart';
 
 class WeatherRepository implements WeatherRepositoryInterface {
-  final WeatherApiClient _apiClient;
+  final BackendApiClient _apiClient;
   final AppDatabase _database;
 
   WeatherRepository({
-    WeatherApiClient? apiClient,
+    BackendApiClient? apiClient,
     AppDatabase? database,
-  })  : _apiClient = apiClient ?? WeatherApiClient(),
+  })  : _apiClient = apiClient ?? BackendApiClient(),
         _database = database ?? AppDatabase();
 
   @override

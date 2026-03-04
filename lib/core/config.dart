@@ -1,13 +1,9 @@
 class AppConfig {
-  // OpenWeatherMap API
-  static const String openWeatherMapApiKey = String.fromEnvironment(
-    'OPENWEATHER_API_KEY',
-    defaultValue: '', // Set via --dart-define=OPENWEATHER_API_KEY=your_key
+  // Backend API (proxies OpenWeatherMap and OpenBeta)
+  static const String backendBaseUrl = String.fromEnvironment(
+    'BACKEND_BASE_URL',
+    defaultValue: 'http://localhost:8000', // Set via --dart-define=BACKEND_BASE_URL=...
   );
-  static const String openWeatherMapBaseUrl = 'https://api.openweathermap.org/data/3.0/onecall';
-  
-  // OpenBeta API
-  static const String openBetaApiUrl = 'https://api.openbeta.io/graphql';
   
   // Cache expiration times (in seconds)
   static const int weatherCacheExpiration = 3600; // 1 hour

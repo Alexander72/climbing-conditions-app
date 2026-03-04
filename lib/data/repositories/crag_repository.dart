@@ -1,18 +1,18 @@
 import '../../domain/repositories/crag_repository_interface.dart';
 import '../../domain/entities/crag.dart';
-import '../datasources/openbeta_api_client.dart';
+import '../datasources/backend_api_client.dart';
 import '../database/app_database.dart';
 import '../models/crag_model.dart';
 
 class CragRepository implements CragRepositoryInterface {
-  final OpenBetaApiClient _apiClient;
+  final BackendApiClient _apiClient;
   final AppDatabase _database;
   bool _hasLoadedFetchedCrags = false;
 
   CragRepository({
-    OpenBetaApiClient? apiClient,
+    BackendApiClient? apiClient,
     AppDatabase? database,
-  })  : _apiClient = apiClient ?? OpenBetaApiClient(),
+  })  : _apiClient = apiClient ?? BackendApiClient(),
         _database = database ?? AppDatabase();
 
   @override
