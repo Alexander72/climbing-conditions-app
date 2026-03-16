@@ -7,7 +7,6 @@ import '../models/crag_model.dart';
 class CragRepository implements CragRepositoryInterface {
   final BackendApiClient _apiClient;
   final AppDatabase _database;
-  bool _hasLoadedFetchedCrags = false;
 
   CragRepository({
     BackendApiClient? apiClient,
@@ -17,11 +16,6 @@ class CragRepository implements CragRepositoryInterface {
 
   @override
   Future<List<Crag>> getAllCrags() async {
-    // Ensure fetched crags are loaded
-    if (!_hasLoadedFetchedCrags) {
-      await refreshCrags();
-    }
-
     final models = await _database.getAllCrags();
     return models.map((m) => m.toEntity()).toList();
   }
@@ -49,35 +43,62 @@ class CragRepository implements CragRepositoryInterface {
     await _database.deleteCrag(id);
   }
 
-  static const String _defaultCountry = 'Belgium';
-
+  /// Fetches crag presence (name + coords only) for the bbox.
+  /// New crags are inserted with isSummaryOnly=true.
+  /// Existing crags (user-added or already detailed) are not overwritten.
   @override
-  Future<void> refreshCrags({String? country, String? region}) async {
+  Future<void> refreshSummaryCragsByBBox({
+    required double minLat,
+    required double maxLat,
+    required double minLng,
+    required double maxLng,
+  }) async {
     try {
-      // Fetch crags from OpenBeta (default to Belgium when not specified)
-      final fetchedCrags = await _apiClient.fetchCragsByRegion(
-        country: country ?? _defaultCountry,
-        region: region,
+      final fetched = await _apiClient.fetchCragsSummaryByBBox(
+        minLat: minLat,
+        maxLat: maxLat,
+        minLng: minLng,
+        maxLng: maxLng,
       );
 
-      // Merge with existing crags (preloaded + user-added are preserved)
-      // Only update fetched crags
-      final existingCrags = await _database.getAllCrags();
-      final existingIds = existingCrags.map((c) => c.id).toSet();
+      final existingModels = await _database.getAllCrags();
+      final existingIds = existingModels.map((c) => c.id).toSet();
 
-      // Filter out crags that already exist (to preserve preloaded/user data)
-      final newCrags = fetchedCrags
-          .where((c) => !existingIds.contains(c.id))
-          .toList();
-
+      final newCrags = fetched.where((c) => !existingIds.contains(c.id)).toList();
       if (newCrags.isNotEmpty) {
         await _database.insertCrags(newCrags);
       }
+    } catch (_) {
+      // Fail silently — app still works with previously cached crags
+    }
+  }
 
-      _hasLoadedFetchedCrags = true;
-    } catch (e) {
-      // Log error but don't fail - we can still use preloaded crags
-      // Error is handled silently to allow app to work with preloaded crags only
+  /// Fetches full crag data (with children) for the bbox.
+  /// Upserts all crags, upgrading any existing summary records to detailed.
+  @override
+  Future<void> refreshDetailedCragsByBBox({
+    required double minLat,
+    required double maxLat,
+    required double minLng,
+    required double maxLng,
+  }) async {
+    try {
+      final fetched = await _apiClient.fetchCragsDetailedByBBox(
+        minLat: minLat,
+        maxLat: maxLat,
+        minLng: minLng,
+        maxLng: maxLng,
+      );
+
+      // Upsert: replaces summary records with full records (ConflictAlgorithm.replace in insertCrags)
+      // User-added crags have a different source so they won't be overwritten in practice,
+      // but if IDs collide the fetched version takes precedence here; user crags use
+      // unique user-generated IDs so collisions won't occur in practice.
+      if (fetched.isNotEmpty) {
+        await _database.insertCrags(fetched);
+      }
+    } catch (_) {
+      // Fail silently
     }
   }
 }

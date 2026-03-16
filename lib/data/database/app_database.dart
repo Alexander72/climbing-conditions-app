@@ -5,7 +5,6 @@ import 'package:path/path.dart';
 import '../models/crag_model.dart';
 import '../models/weather_model.dart';
 import '../models/condition_model.dart';
-import 'seed_data.dart';
 
 class AppDatabase {
   static final AppDatabase _instance = AppDatabase._internal();
@@ -34,9 +33,9 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
-      onOpen: _onOpen,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -61,27 +60,17 @@ class AppDatabase {
       'climbingTypes': map['climbingTypes'] is String
           ? jsonDecode(map['climbingTypes'] as String)
           : map['climbingTypes'],
+      'isSummaryOnly': (map['isSummaryOnly'] as int? ?? 0) == 1,
     };
   }
 
-  Future<void> _onOpen(Database db) async {
-    // Check if preloaded crags exist
-    final count = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM crags WHERE source = ?', ['preloaded']),
-    );
-    
-    if (count == 0) {
-      // Load seed data if no preloaded crags exist
-      final seedData = SeedData.getPreloadedCrags();
-      final batch = db.batch();
-      for (final crag in seedData) {
-        batch.insert(
-          'crags',
-          _sanitizeMap(crag.toJson()),
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      }
-      await batch.commit(noResult: true);
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE crags ADD COLUMN isSummaryOnly INTEGER NOT NULL DEFAULT 0',
+      );
+      // Remove any pre-loaded seed crags from old installations
+      await db.delete('crags', where: 'source = ?', whereArgs: ['preloaded']);
     }
   }
 
@@ -98,7 +87,8 @@ class AppDatabase {
         climbingTypes TEXT NOT NULL,
         elevation REAL,
         description TEXT,
-        source TEXT NOT NULL
+        source TEXT NOT NULL,
+        isSummaryOnly INTEGER NOT NULL DEFAULT 0
       )
     ''');
 

@@ -126,34 +126,71 @@ class BackendApiClient {
   // Crags
   // ---------------------------------------------------------------------------
 
-  Future<List<CragModel>> fetchCragsByRegion({
-    String? country,
-    String? region,
+  /// Fetches crag names + coordinates only for the given viewport bbox.
+  /// Used at zoom 7–9 (summary tier). Children are not included.
+  Future<List<CragModel>> fetchCragsSummaryByBBox({
+    required double minLat,
+    required double maxLat,
+    required double minLng,
+    required double maxLng,
   }) async {
-    final effectiveRegion = region?.isNotEmpty == true
-        ? region!
-        : (country ?? 'Belgium');
+    return _fetchCragsByBBox(
+      minLat: minLat,
+      maxLat: maxLat,
+      minLng: minLng,
+      maxLng: maxLng,
+      detailLevel: 'summary',
+      isSummaryOnly: true,
+    );
+  }
 
+  /// Fetches crags with children for the given viewport bbox.
+  /// Used at zoom > 9 (detailed tier).
+  Future<List<CragModel>> fetchCragsDetailedByBBox({
+    required double minLat,
+    required double maxLat,
+    required double minLng,
+    required double maxLng,
+  }) async {
+    return _fetchCragsByBBox(
+      minLat: minLat,
+      maxLat: maxLat,
+      minLng: minLng,
+      maxLng: maxLng,
+      detailLevel: 'full',
+      isSummaryOnly: false,
+    );
+  }
+
+  Future<List<CragModel>> _fetchCragsByBBox({
+    required double minLat,
+    required double maxLat,
+    required double minLng,
+    required double maxLng,
+    required String detailLevel,
+    required bool isSummaryOnly,
+  }) async {
     final uri = Uri.parse('$_baseUrl/api/crags').replace(
-      queryParameters: {'region': effectiveRegion},
+      queryParameters: {
+        'min_lat': minLat.toString(),
+        'max_lat': maxLat.toString(),
+        'min_lng': minLng.toString(),
+        'max_lng': maxLng.toString(),
+        'detail_level': detailLevel,
+      },
     );
 
     developer.log(
-      'Fetching crags from backend: $uri',
+      'Fetching crags [$detailLevel] from backend: $uri',
       name: 'BackendApiClient',
     );
 
     try {
       final response = await _client.get(uri);
 
-      developer.log(
-        'Backend crags response: ${response.statusCode}',
-        name: 'BackendApiClient',
-      );
-
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body) as Map<String, dynamic>;
-        return _parseCragsResponse(jsonData);
+        return _parseCragsResponse(jsonData, isSummaryOnly: isSummaryOnly);
       } else {
         throw Exception(
           'Failed to fetch crags from backend: ${response.statusCode} - ${response.body}',
@@ -164,11 +201,18 @@ class BackendApiClient {
     }
   }
 
-  List<CragModel> _parseCragsResponse(Map<String, dynamic> json) {
+  List<CragModel> _parseCragsResponse(
+    Map<String, dynamic> json, {
+    bool isSummaryOnly = false,
+  }) {
     final crags = <CragModel>[];
 
-    if (json['data'] != null && json['data']['areas'] != null) {
-      final areas = json['data']['areas'] as List<dynamic>;
+    final dataNode = json['data'];
+    final rawList = dataNode != null
+        ? (dataNode['cragsWithin'] ?? dataNode['areas'])
+        : null;
+    if (rawList != null) {
+      final areas = rawList as List<dynamic>;
 
       for (final area in areas) {
         final areaMap = area as Map<String, dynamic>;
@@ -186,10 +230,11 @@ class BackendApiClient {
             rockTypeString: RockType.limestone.name,
             climbingTypesString: [ClimbingType.sport.name],
             sourceString: CragSource.fetched.name,
+            isSummaryOnly: isSummaryOnly,
           ));
         }
 
-        if (areaMap['children'] != null) {
+        if (!isSummaryOnly && areaMap['children'] != null) {
           final children = areaMap['children'] as List<dynamic>;
           for (final child in children) {
             final childMap = child as Map<String, dynamic>;
@@ -208,6 +253,7 @@ class BackendApiClient {
                 rockTypeString: RockType.limestone.name,
                 climbingTypesString: [ClimbingType.sport.name],
                 sourceString: CragSource.fetched.name,
+                isSummaryOnly: false,
               ));
             }
           }

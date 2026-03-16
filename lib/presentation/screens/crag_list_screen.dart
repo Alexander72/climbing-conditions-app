@@ -43,9 +43,11 @@ class _CragListScreenState extends State<CragListScreen> {
           );
         }
 
-        var crags = cragProvider.crags;
+        var crags = cragProvider.visibleCrags;
+        final isDetailed = cragProvider.isDetailedZoom;
+        final zoom = cragProvider.currentZoom;
 
-        // Apply filters
+        // Apply filters (only meaningful in detailed mode, but harmless otherwise)
         if (_selectedRockType != null) {
           crags = crags
               .where((c) => c.rockType.name == _selectedRockType)
@@ -60,31 +62,50 @@ class _CragListScreenState extends State<CragListScreen> {
         return Scaffold(
           body: Column(
             children: [
+              _buildInfoBar(context, zoom, crags.length, cragProvider.isFetchingViewport),
               _buildFilters(context),
               Expanded(
-                child: ListView.builder(
-                  itemCount: crags.length,
-                  itemBuilder: (context, index) {
-                    final crag = crags[index];
-                    return FutureBuilder<Condition?>(
-                      future: _getConditionForCrag(context, crag),
-                      builder: (context, snapshot) {
-                        return CragCard(
-                          crag: crag,
-                          condition: snapshot.data,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CragDetailScreen(crag: crag),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
+                child: crags.isEmpty
+                    ? _buildEmptyState(context, zoom)
+                    : ListView.builder(
+                        itemCount: crags.length,
+                        itemBuilder: (context, index) {
+                          final crag = crags[index];
+                          final showSummary = !isDetailed || crag.isSummaryOnly;
+                          return showSummary
+                              ? CragCard(
+                                  crag: crag,
+                                  isSummaryOnly: true,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            CragDetailScreen(crag: crag),
+                                      ),
+                                    );
+                                  },
+                                )
+                              : FutureBuilder<Condition?>(
+                                  future: _getConditionForCrag(context, crag),
+                                  builder: (context, snapshot) {
+                                    return CragCard(
+                                      crag: crag,
+                                      condition: snapshot.data,
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                CragDetailScreen(crag: crag),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                        },
+                      ),
               ),
             ],
           ),
@@ -101,6 +122,74 @@ class _CragListScreenState extends State<CragListScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildInfoBar(
+    BuildContext context,
+    double zoom,
+    int count,
+    bool isFetching,
+  ) {
+    final String message;
+    if (zoom < 7.0) {
+      message = 'Zoom in on the map to discover crags';
+    } else if (zoom <= 9.0) {
+      message = count == 0
+          ? 'Zoom in further to see crags in this area'
+          : '$count crag${count == 1 ? '' : 's'} found — zoom in further to see conditions';
+    } else {
+      message = count == 0
+          ? 'No crags found in this area'
+          : 'Showing $count crag${count == 1 ? '' : 's'} with conditions';
+    }
+
+    return Container(
+      width: double.infinity,
+      color: Theme.of(context).colorScheme.primaryContainer,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+            ),
+          ),
+          if (isFetching)
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, double zoom) {
+    final icon = zoom < 7.0 ? Icons.zoom_in : Icons.search_off;
+    final label = zoom < 7.0
+        ? 'Zoom in on the map\nto discover crags'
+        : 'No crags in this area yet';
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 48, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .bodyLarge
+                ?.copyWith(color: Colors.grey),
+          ),
+        ],
+      ),
     );
   }
 

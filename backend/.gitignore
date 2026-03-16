@@ -1,5 +1,19 @@
+# Local environment
 .env
+
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
+
+# SAM / Lambda build artifacts
+.aws-sam/
+deployment_package.zip
+my_deployment_package.zip
+
+# SAM deploy config (contains account ID and S3 bucket name)
+samconfig.toml
+
+# Local Lambda env vars (contains secrets)
+env.json

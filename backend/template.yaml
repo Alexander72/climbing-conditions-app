@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Climbing Conditions API — Lambda + API Gateway
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.12
+    Environment:
+      Variables:
+        OPENWEATHER_BASE_URL: "https://api.openweathermap.org/data/3.0/onecall"
+        OPENBETA_HOST: "https://api.openbeta.io"
+
+Parameters:
+  Stage:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, prod]
+    Description: Deployment stage
+
+Resources:
+  ClimbingConditionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "climbing-conditions-api-${Stage}"
+      CodeUri: .
+      Handler: lambda_function.handler
+      Description: Climbing Conditions API (FastAPI via Mangum)
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: "climbing-conditions/openweather-api-key"
+      Events:
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ClimbingConditionsApi
+            Path: /
+            Method: ANY
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ClimbingConditionsApi
+            Path: /{proxy+}
+            Method: ANY
+
+  ClimbingConditionsApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - "*"
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway base URL
+    Value: !Sub "https://${ClimbingConditionsApi}.execute-api.${AWS::Region}.amazonaws.com"
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt ClimbingConditionsFunction.Arn

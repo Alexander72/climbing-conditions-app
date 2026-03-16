@@ -19,6 +19,7 @@ CragModel _$CragModelFromJson(Map<String, dynamic> json) => CragModel(
   elevation: (json['elevation'] as num?)?.toDouble(),
   description: json['description'] as String?,
   sourceString: json['source'] as String,
+  isSummaryOnly: json['isSummaryOnly'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$CragModelToJson(CragModel instance) => <String, dynamic>{
@@ -32,4 +33,5 @@ Map<String, dynamic> _$CragModelToJson(CragModel instance) => <String, dynamic>{
   'elevation': instance.elevation,
   'description': instance.description,
   'source': instance.sourceString,
+  'isSummaryOnly': instance.isSummaryOnly,
 };

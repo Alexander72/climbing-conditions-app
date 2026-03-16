@@ -14,6 +14,7 @@ class Crag {
   final double? elevation;
   final String? description;
   final CragSource source;
+  final bool isSummaryOnly;
 
   const Crag({
     required this.id,
@@ -26,5 +27,6 @@ class Crag {
     this.elevation,
     this.description,
     required this.source,
+    this.isSummaryOnly = false,
   });
 }

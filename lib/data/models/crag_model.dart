@@ -23,6 +23,7 @@ class CragModel {
   final String? description;
   @JsonKey(name: 'source')
   final String sourceString;
+  final bool isSummaryOnly;
 
   CragModel({
     required this.id,
@@ -35,6 +36,7 @@ class CragModel {
     this.elevation,
     this.description,
     required this.sourceString,
+    this.isSummaryOnly = false,
   });
 
   factory CragModel.fromJson(Map<String, dynamic> json) =>
@@ -54,6 +56,7 @@ class CragModel {
       elevation: crag.elevation,
       description: crag.description,
       sourceString: crag.source.name,
+      isSummaryOnly: crag.isSummaryOnly,
     );
   }
 
@@ -83,6 +86,7 @@ class CragModel {
         (e) => e.name == sourceString,
         orElse: () => CragSource.user,
       ),
+      isSummaryOnly: isSummaryOnly,
     );
   }
 }
