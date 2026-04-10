@@ -31,14 +31,14 @@ deploy:
 package:
 	rm -rf dist && mkdir dist
 	pip install -r requirements-lambda.txt --target dist/
-	cp -r *.py routers dist/
+	cp -r *.py routers services data dist/
 	cd dist && zip -r ../deployment_package.zip . && cd ..
 	rm -rf dist
 	@echo "Created deployment_package.zip"
 
 # ── Testing ──────────────────────────────────────────────────────────────────
 test:
-	pytest
+	PYTHONPATH=. pytest tests/
 
 # ── Cleanup ──────────────────────────────────────────────────────────────────
 clean:

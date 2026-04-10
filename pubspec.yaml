@@ -38,9 +38,6 @@ dependencies:
   # API calls
   http: ^1.6.0
   
-  # OpenBeta GraphQL API
-  graphql_flutter: ^5.2.0
-  
   # State management
   provider: ^6.1.1
   

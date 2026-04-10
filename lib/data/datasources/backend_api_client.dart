@@ -9,8 +9,8 @@ import '../../domain/entities/rock_type.dart';
 import '../../domain/entities/climbing_type.dart';
 import '../../domain/entities/crag_source.dart';
 
-/// Single HTTP client that proxies all external API calls through the backend.
-/// Replaces both [WeatherApiClient] and [OpenBetaApiClient].
+/// Single HTTP client that proxies external API calls through the backend (weather).
+/// Crag locations are served from the backend’s local catalog (`GET /api/crags`).
 class BackendApiClient {
   final http.Client _client;
   final String _baseUrl;
@@ -206,59 +206,28 @@ class BackendApiClient {
     bool isSummaryOnly = false,
   }) {
     final crags = <CragModel>[];
+    final rawList = json['crags'] as List<dynamic>?;
+    if (rawList == null) return crags;
 
-    final dataNode = json['data'];
-    final rawList = dataNode != null
-        ? (dataNode['cragsWithin'] ?? dataNode['areas'])
-        : null;
-    if (rawList != null) {
-      final areas = rawList as List<dynamic>;
+    for (final item in rawList) {
+      final m = item as Map<String, dynamic>;
+      final lat = m['latitude'];
+      final lng = m['longitude'];
+      if (lat == null || lng == null) continue;
 
-      for (final area in areas) {
-        final areaMap = area as Map<String, dynamic>;
-        final metadata = areaMap['metadata'] as Map<String, dynamic>?;
+      final summaryFlag = m['isSummaryOnly'] as bool? ?? isSummaryOnly;
 
-        if (metadata != null &&
-            metadata['lat'] != null &&
-            metadata['lng'] != null) {
-          crags.add(CragModel(
-            id: areaMap['area_name'] ?? 'unknown',
-            name: areaMap['area_name'] ?? 'Unknown Crag',
-            latitude: (metadata['lat'] as num).toDouble(),
-            longitude: (metadata['lng'] as num).toDouble(),
-            aspectString: Aspect.unknown.name,
-            rockTypeString: RockType.limestone.name,
-            climbingTypesString: [ClimbingType.sport.name],
-            sourceString: CragSource.fetched.name,
-            isSummaryOnly: isSummaryOnly,
-          ));
-        }
-
-        if (!isSummaryOnly && areaMap['children'] != null) {
-          final children = areaMap['children'] as List<dynamic>;
-          for (final child in children) {
-            final childMap = child as Map<String, dynamic>;
-            final childMetadata =
-                childMap['metadata'] as Map<String, dynamic>?;
-
-            if (childMetadata != null &&
-                childMetadata['lat'] != null &&
-                childMetadata['lng'] != null) {
-              crags.add(CragModel(
-                id: childMap['area_name'] ?? 'unknown',
-                name: childMap['area_name'] ?? 'Unknown Crag',
-                latitude: (childMetadata['lat'] as num).toDouble(),
-                longitude: (childMetadata['lng'] as num).toDouble(),
-                aspectString: Aspect.unknown.name,
-                rockTypeString: RockType.limestone.name,
-                climbingTypesString: [ClimbingType.sport.name],
-                sourceString: CragSource.fetched.name,
-                isSummaryOnly: false,
-              ));
-            }
-          }
-        }
-      }
+      crags.add(CragModel(
+        id: m['id'] as String? ?? 'unknown',
+        name: m['name'] as String? ?? 'Unknown Crag',
+        latitude: (lat as num).toDouble(),
+        longitude: (lng as num).toDouble(),
+        aspectString: Aspect.unknown.name,
+        rockTypeString: RockType.limestone.name,
+        climbingTypesString: [ClimbingType.sport.name],
+        sourceString: CragSource.fetched.name,
+        isSummaryOnly: summaryFlag,
+      ));
     }
 
     return crags;

@@ -1,5 +1,5 @@
 class AppConfig {
-  // Backend API (proxies OpenWeatherMap and OpenBeta)
+  // Backend API (OpenWeatherMap proxy + local crag catalog)
   static const String backendBaseUrl = String.fromEnvironment(
     'BACKEND_BASE_URL',
     defaultValue: 'http://localhost:8000', // Set via --dart-define=BACKEND_BASE_URL=...

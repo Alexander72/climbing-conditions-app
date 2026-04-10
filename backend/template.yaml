@@ -10,7 +10,6 @@ Globals:
     Environment:
       Variables:
         OPENWEATHER_BASE_URL: "https://api.openweathermap.org/data/3.0/onecall"
-        OPENBETA_HOST: "https://api.openbeta.io"
 
 Parameters:
   Stage:

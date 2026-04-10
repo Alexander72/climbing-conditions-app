@@ -1,6 +1,6 @@
 # Climbing Conditions — Backend API
 
-A lightweight FastAPI service that proxies external APIs (OpenWeatherMap, OpenBeta) so the Flutter app never handles third-party credentials directly. Runs locally as a plain Python server or Docker container, and deploys to AWS as a Lambda function behind API Gateway.
+A lightweight FastAPI service that proxies OpenWeatherMap for weather and serves crag locations from **bundled JSON** (no third-party crag API). The Flutter app only talks to this backend. Runs locally as a plain Python server or Docker container, and deploys to AWS as a Lambda function behind API Gateway.
 
 ## Endpoints
 
@@ -8,7 +8,31 @@ A lightweight FastAPI service that proxies external APIs (OpenWeatherMap, OpenBe
 |--------|------|-------------|
 | `GET` | `/health` | Health check — returns `{"status": "ok"}` |
 | `GET` | `/api/weather?lat=&lon=` | Current weather + hourly forecast from OpenWeatherMap |
-| `GET` | `/api/crags?region=Belgium` | Crag/area data from OpenBeta GraphQL |
+| `GET` | `/api/crags` | Crags inside a bounding box (see below) |
+
+### `GET /api/crags`
+
+**Query parameters (all required):** `min_lat`, `max_lat`, `min_lng`, `max_lng`  
+**Optional:** `detail_level` — `summary` (default) or `full` (sets `isSummaryOnly` on each item for the client).
+
+The backend loads `data/crags/<country>.json` for every country whose coverage bbox (see `data/crag_country_bboxes.json`) overlaps the request bbox, merges results, and returns only crags whose coordinates fall inside the request bbox.
+
+**Response shape:**
+
+```json
+{
+  "crags": [
+    {
+      "id": "be:corphalie-huy",
+      "name": "Corphalie (Huy)",
+      "latitude": 50.538678,
+      "longitude": 5.260767,
+      "country": "be",
+      "isSummaryOnly": true
+    }
+  ]
+}
+```
 
 ## Environment variables
 
@@ -16,7 +40,6 @@ A lightweight FastAPI service that proxies external APIs (OpenWeatherMap, OpenBe
 |----------|----------|---------|-------------|
 | `OPENWEATHER_API_KEY` | **Yes** | — | OpenWeatherMap One Call API 3.0 key |
 | `OPENWEATHER_BASE_URL` | No | `https://api.openweathermap.org/data/3.0/onecall` | OWM endpoint (override for testing) |
-| `OPENBETA_HOST` | No | `https://api.openbeta.io` | OpenBeta base host |
 | `BACKEND_PORT` | No | `8000` | Host port mapped in `docker-compose.yml` |
 
 ---
@@ -177,7 +200,13 @@ backend/
 ├── lambda_function.py       # Lambda entrypoint (Mangum ASGI adapter)
 ├── routers/
 │   ├── weather.py           # GET /api/weather — proxies OpenWeatherMap
-│   └── crags.py             # GET /api/crags   — proxies OpenBeta GraphQL
+│   └── crags.py             # GET /api/crags — local JSON catalog + bbox
+├── services/
+│   └── crag_catalog.py      # Country bbox overlap, load crags/*.json
+├── data/
+│   ├── crag_country_bboxes.json
+│   └── crags/               # e.g. be.json — one file per ISO country code
+├── tests/                   # pytest
 ├── template.yaml            # AWS SAM template (Lambda + API Gateway)
 ├── Makefile                 # Dev, build, and deploy shortcuts
 ├── Dockerfile               # Container image (for Docker Compose / ECS)

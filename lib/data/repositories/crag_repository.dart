@@ -73,7 +73,7 @@ class CragRepository implements CragRepositoryInterface {
     }
   }
 
-  /// Fetches full crag data (with children) for the bbox.
+  /// Fetches detailed crag rows for the bbox (`isSummaryOnly: false` from the API).
   /// Upserts all crags, upgrading any existing summary records to detailed.
   @override
   Future<void> refreshDetailedCragsByBBox({

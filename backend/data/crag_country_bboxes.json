@@ -1,0 +1,10 @@
+{
+  "countries": {
+    "be": {
+      "min_lat": 49.4,
+      "max_lat": 51.6,
+      "min_lng": 2.4,
+      "max_lng": 6.5
+    }
+  }
+}
