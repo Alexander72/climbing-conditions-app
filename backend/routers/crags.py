@@ -10,6 +10,11 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+class GradeHistogramBin(BaseModel):
+    grade: str
+    count: int
+
+
 class CragItem(BaseModel):
     id: str
     name: str
@@ -17,6 +22,12 @@ class CragItem(BaseModel):
     longitude: float = Field(..., description="WGS84 longitude")
     country: str = Field(..., description="ISO 3166-1 alpha-2 country code for the dataset")
     isSummaryOnly: bool
+    routeCount: int | None = None
+    sportCount: int | None = None
+    tradNPCount: int | None = None
+    boulderCount: int | None = None
+    dwsCount: int | None = None
+    gradeHistogram: list[GradeHistogramBin] | None = None
 
 
 class CragsResponse(BaseModel):

@@ -217,6 +217,18 @@ class BackendApiClient {
 
       final summaryFlag = m['isSummaryOnly'] as bool? ?? isSummaryOnly;
 
+      List<GradeHistogramBinModel>? gradeBins;
+      final gradeRaw = m['gradeHistogram'];
+      if (gradeRaw is List<dynamic>) {
+        gradeBins = gradeRaw
+            .map(
+              (e) => GradeHistogramBinModel.fromJson(
+                Map<String, dynamic>.from(e as Map<String, dynamic>),
+              ),
+            )
+            .toList();
+      }
+
       crags.add(CragModel(
         id: m['id'] as String? ?? 'unknown',
         name: m['name'] as String? ?? 'Unknown Crag',
@@ -227,6 +239,12 @@ class BackendApiClient {
         climbingTypesString: [ClimbingType.sport.name],
         sourceString: CragSource.fetched.name,
         isSummaryOnly: summaryFlag,
+        routeCount: (m['routeCount'] as num?)?.toInt(),
+        sportCount: (m['sportCount'] as num?)?.toInt(),
+        tradNPCount: (m['tradNPCount'] as num?)?.toInt(),
+        boulderCount: (m['boulderCount'] as num?)?.toInt(),
+        dwsCount: (m['dwsCount'] as num?)?.toInt(),
+        gradeHistogram: gradeBins,
       ));
     }
 

@@ -20,6 +20,12 @@ CragModel _$CragModelFromJson(Map<String, dynamic> json) => CragModel(
   description: json['description'] as String?,
   sourceString: json['source'] as String,
   isSummaryOnly: json['isSummaryOnly'] as bool? ?? false,
+  routeCount: (json['routeCount'] as num?)?.toInt(),
+  sportCount: (json['sportCount'] as num?)?.toInt(),
+  tradNPCount: (json['tradNPCount'] as num?)?.toInt(),
+  boulderCount: (json['boulderCount'] as num?)?.toInt(),
+  dwsCount: (json['dwsCount'] as num?)?.toInt(),
+  gradeHistogram: _gradeHistogramFromJson(json['gradeHistogram']),
 );
 
 Map<String, dynamic> _$CragModelToJson(CragModel instance) => <String, dynamic>{
@@ -34,4 +40,10 @@ Map<String, dynamic> _$CragModelToJson(CragModel instance) => <String, dynamic>{
   'description': instance.description,
   'source': instance.sourceString,
   'isSummaryOnly': instance.isSummaryOnly,
+  'routeCount': instance.routeCount,
+  'sportCount': instance.sportCount,
+  'tradNPCount': instance.tradNPCount,
+  'boulderCount': instance.boulderCount,
+  'dwsCount': instance.dwsCount,
+  'gradeHistogram': _gradeHistogramToJson(instance.gradeHistogram),
 };

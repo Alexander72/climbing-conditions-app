@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/weather_provider.dart';
 import '../providers/condition_provider.dart';
 import '../widgets/condition_card.dart';
+import '../widgets/crag_route_stats_card.dart';
 import '../widgets/weather_info_card.dart';
 import '../widgets/weather_chart.dart';
 import '../../domain/entities/crag.dart';
@@ -145,6 +146,9 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      CragRouteStatsCard(stats: widget.crag.routeStats),
+                      if (widget.crag.routeStats?.hasAnyData ?? false)
+                        const SizedBox(height: 16),
 
                       // Condition card
                       if (_condition != null)

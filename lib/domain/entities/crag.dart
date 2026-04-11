@@ -2,6 +2,7 @@ import 'aspect.dart';
 import 'rock_type.dart';
 import 'climbing_type.dart';
 import 'crag_source.dart';
+import 'crag_route_stats.dart';
 
 class Crag {
   final String id;
@@ -15,6 +16,7 @@ class Crag {
   final String? description;
   final CragSource source;
   final bool isSummaryOnly;
+  final CragRouteStats? routeStats;
 
   const Crag({
     required this.id,
@@ -28,5 +30,6 @@ class Crag {
     this.description,
     required this.source,
     this.isSummaryOnly = false,
+    this.routeStats,
   });
 }

@@ -12,9 +12,14 @@ logger = logging.getLogger(__name__)
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 COUNTRY_BBOXES_PATH = BACKEND_ROOT / "data" / "crag_country_bboxes.json"
 CRAGS_DIR = BACKEND_ROOT / "data" / "crags"
+GRADES_PATH = BACKEND_ROOT / "data" / "grades.json"
+
+# Index into each grades.json row: lowercase French sport grade (e.g. 6a, 6b+).
+FRENCH_GRADE_INDEX = 4
 
 _crags_cache: dict[str, list[dict[str, Any]]] = {}
 _country_bboxes: dict[str, dict[str, float]] | None = None
+_grades_table: dict[str, Any] | None = None
 
 
 def _load_country_bboxes() -> dict[str, dict[str, float]]:
@@ -29,6 +34,19 @@ def _load_country_bboxes() -> dict[str, dict[str, float]]:
         raw = json.load(f)
     _country_bboxes = dict(raw.get("countries") or {})
     return _country_bboxes
+
+
+def _load_grades_table() -> dict[str, Any]:
+    global _grades_table
+    if _grades_table is not None:
+        return _grades_table
+    if not GRADES_PATH.is_file():
+        logger.warning("Missing %s — grade labels fall back to raw codes", GRADES_PATH)
+        _grades_table = {}
+        return _grades_table
+    with open(GRADES_PATH, encoding="utf-8") as f:
+        _grades_table = json.load(f)
+    return _grades_table
 
 
 def bboxes_overlap(
@@ -72,6 +90,85 @@ def countries_overlapping_bbox(
         except (KeyError, TypeError, ValueError):
             logger.warning("Invalid bbox entry for country %s: %s", code, box)
     return sorted(out)
+
+
+def _safe_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _label_for_grade_code(code_str: str) -> str:
+    table = _load_grades_table()
+    row = table.get(code_str)
+    if not isinstance(row, list) or len(row) <= FRENCH_GRADE_INDEX:
+        return code_str
+    label = row[FRENCH_GRADE_INDEX]
+    if label is None or not isinstance(label, str) or not label.strip():
+        return code_str
+    return label.strip()
+
+
+def grade_histogram_from_route_counts(route_counts: Any) -> list[dict[str, Any]]:
+    """Merge per-style grade buckets into one histogram (French labels, sorted by internal code)."""
+    if not isinstance(route_counts, dict):
+        return []
+    merged: dict[str, int] = {}
+    sort_code: dict[str, int] = {}
+    for _style, buckets in route_counts.items():
+        if not isinstance(buckets, dict):
+            continue
+        for code_str, cnt in buckets.items():
+            n = _safe_int(cnt)
+            if n is None or n <= 0:
+                continue
+            try:
+                code_int = int(code_str)
+            except (TypeError, ValueError):
+                code_int = 0
+            label = _label_for_grade_code(str(code_str))
+            merged[label] = merged.get(label, 0) + n
+            prev = sort_code.get(label, code_int)
+            sort_code[label] = min(prev, code_int)
+    if not merged:
+        return []
+    labels = sorted(merged.keys(), key=lambda lb: sort_code.get(lb, 0))
+    return [{"grade": lb, "count": merged[lb]} for lb in labels]
+
+
+def coarse_grade_histogram_from_row(row: dict[str, Any]) -> list[dict[str, Any]]:
+    """Fallback using grade4_count … grade9_count (French class bands)."""
+    bins: list[dict[str, Any]] = []
+    for band in range(4, 10):
+        v = _safe_int(row.get(f"grade{band}_count"))
+        if v is not None and v > 0:
+            bins.append({"grade": str(band), "count": v})
+    return bins
+
+
+def route_stats_from_row(row: dict[str, Any]) -> dict[str, Any]:
+    """Optional API fields derived from raw catalog row."""
+    out: dict[str, Any] = {}
+    mapping = (
+        ("route_count", "routeCount"),
+        ("sport_count", "sportCount"),
+        ("trad_n_p_count", "tradNPCount"),
+        ("boulder_count", "boulderCount"),
+        ("dws_count", "dwsCount"),
+    )
+    for src, dst in mapping:
+        v = _safe_int(row.get(src))
+        if v is not None:
+            out[dst] = v
+    hist = grade_histogram_from_route_counts(row.get("route_counts"))
+    if not hist:
+        hist = coarse_grade_histogram_from_row(row)
+    if hist:
+        out["gradeHistogram"] = hist
+    return out
 
 
 def _load_raw_crags(country: str) -> list[dict[str, Any]]:
@@ -135,14 +232,14 @@ def list_crags_in_bbox(
             name = row.get("name")
             if not name or not isinstance(name, str):
                 name = "Unknown crag"
-            result.append(
-                {
-                    "id": crag_id,
-                    "name": name,
-                    "latitude": lat,
-                    "longitude": lng,
-                    "country": country,
-                    "isSummaryOnly": is_summary_only,
-                }
-            )
+            dto: dict[str, Any] = {
+                "id": crag_id,
+                "name": name,
+                "latitude": lat,
+                "longitude": lng,
+                "country": country,
+                "isSummaryOnly": is_summary_only,
+            }
+            dto.update(route_stats_from_row(row))
+            result.append(dto)
     return result

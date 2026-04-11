@@ -33,7 +33,7 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -72,6 +72,14 @@ class AppDatabase {
       // Remove any pre-loaded seed crags from old installations
       await db.delete('crags', where: 'source = ?', whereArgs: ['preloaded']);
     }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE crags ADD COLUMN routeCount INTEGER');
+      await db.execute('ALTER TABLE crags ADD COLUMN sportCount INTEGER');
+      await db.execute('ALTER TABLE crags ADD COLUMN tradNPCount INTEGER');
+      await db.execute('ALTER TABLE crags ADD COLUMN boulderCount INTEGER');
+      await db.execute('ALTER TABLE crags ADD COLUMN dwsCount INTEGER');
+      await db.execute('ALTER TABLE crags ADD COLUMN gradeHistogram TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -88,7 +96,13 @@ class AppDatabase {
         elevation REAL,
         description TEXT,
         source TEXT NOT NULL,
-        isSummaryOnly INTEGER NOT NULL DEFAULT 0
+        isSummaryOnly INTEGER NOT NULL DEFAULT 0,
+        routeCount INTEGER,
+        sportCount INTEGER,
+        tradNPCount INTEGER,
+        boulderCount INTEGER,
+        dwsCount INTEGER,
+        gradeHistogram TEXT
       )
     ''');
 

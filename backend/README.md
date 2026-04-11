@@ -28,11 +28,19 @@ The backend loads `data/crags/<country>.json` for every country whose coverage b
       "latitude": 50.538678,
       "longitude": 5.260767,
       "country": "be",
-      "isSummaryOnly": true
+      "isSummaryOnly": true,
+      "routeCount": 123,
+      "sportCount": 87,
+      "tradNPCount": 36,
+      "boulderCount": 0,
+      "dwsCount": 0,
+      "gradeHistogram": [{ "grade": "6a", "count": 12 }]
     }
   ]
 }
 ```
+
+Optional route fields are omitted when missing from the source row. `gradeHistogram` uses French sport grade labels derived from bundled `data/grades.json`.
 
 ## Environment variables
 
