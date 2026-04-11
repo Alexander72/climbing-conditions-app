@@ -1,6 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:climbing_app/domain/entities/crag_route_stats.dart';
-import 'package:climbing_app/presentation/utils/grade_histogram_display.dart';
+import 'package:climbing_app/presentation/utils/grade_histogram_display.dart'
+    show
+        compareGradeLabels,
+        mergeGradeHistogramForDisplay,
+        mergePlusGradeBins,
+        normalizeGradeLabel;
 
 void main() {
   test('normalizeGradeLabel strips trailing plus', () {
@@ -25,5 +30,18 @@ void main() {
     expect(compareGradeLabels('4', '5'), lessThan(0));
     expect(compareGradeLabels('6a', '6b'), lessThan(0));
     expect(compareGradeLabels('6c', '7a'), lessThan(0));
+  });
+
+  test('mergeGradeHistogramForDisplay drops unknown and merges 3+4', () {
+    final r = mergeGradeHistogramForDisplay([
+      const GradeHistogramBin(grade: '?', count: 10),
+      const GradeHistogramBin(grade: '3', count: 2),
+      const GradeHistogramBin(grade: '4', count: 3),
+      const GradeHistogramBin(grade: '5', count: 1),
+    ]);
+    expect(r.map((e) => e.grade).contains('?'), false);
+    final band4 = r.firstWhere((b) => b.grade == '4');
+    expect(band4.count, 5);
+    expect(r.firstWhere((b) => b.grade == '5').count, 1);
   });
 }

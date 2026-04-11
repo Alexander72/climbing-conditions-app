@@ -21,7 +21,7 @@ class CragRouteStatsCard extends StatelessWidget {
 
     final theme = Theme.of(context);
     final brightness = theme.brightness;
-    final mergedHistogram = mergePlusGradeBins(s.gradeHistogram);
+    final mergedHistogram = mergeGradeHistogramForDisplay(s.gradeHistogram);
     final maxBin = mergedHistogram.isEmpty
         ? 0
         : mergedHistogram.map((b) => b.count).reduce((a, b) => a > b ? a : b);
@@ -32,38 +32,20 @@ class CragRouteStatsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Routes',
-              style: theme.textTheme.titleMedium,
-            ),
-            if (s.routeCount != null && s.routeCount! > 0) ...[
-              const SizedBox(height: 8),
-              Text(
-                '${s.routeCount} routes listed',
-                style: theme.textTheme.bodyLarge,
-              ),
-            ],
             if (s.sportCount != null ||
                 s.tradNPCount != null ||
-                s.boulderCount != null) ...[
+                s.boulderCount != null ||
+                s.dwsCount != null) ...[
               const SizedBox(height: 16),
               _StyleSummaryRow(
                 sport: s.sportCount,
                 trad: s.tradNPCount,
                 boulder: s.boulderCount,
+                dws: s.dwsCount,
               ),
-            ],
-            if (s.dwsCount != null) ...[
-              const SizedBox(height: 8),
-              Text('DWS: ${s.dwsCount}', style: theme.textTheme.bodyMedium),
             ],
             if (mergedHistogram.isNotEmpty) ...[
               const SizedBox(height: 20),
-              Text(
-                'By grade (French)',
-                style: theme.textTheme.titleSmall,
-              ),
-              const SizedBox(height: 12),
               _ResponsiveGradeHistogram(
                 bins: mergedHistogram,
                 maxCount: maxBin,
@@ -178,11 +160,13 @@ class _StyleSummaryRow extends StatelessWidget {
   final int? sport;
   final int? trad;
   final int? boulder;
+  final int? dws;
 
   const _StyleSummaryRow({
     required this.sport,
     required this.trad,
     required this.boulder,
+    required this.dws,
   });
 
   @override
@@ -206,6 +190,14 @@ class _StyleSummaryRow extends StatelessWidget {
         count: boulder!,
         icon: Icons.square_foot_rounded,
         tip: null,
+      ));
+    }
+    if (dws != null) {
+      items.add((
+        label: 'DWS',
+        count: dws!,
+        icon: Icons.pool_rounded,
+        tip: 'Deep-water soloing',
       ));
     }
     if (items.isEmpty) return const SizedBox.shrink();

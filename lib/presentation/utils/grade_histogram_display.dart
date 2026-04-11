@@ -24,6 +24,42 @@ List<GradeHistogramBin> mergePlusGradeBins(List<GradeHistogramBin> bins) {
       .toList();
 }
 
+/// True when this bin should not be shown (no usable grade).
+bool isUnknownGradeLabel(String raw) {
+  final g = raw.trim().toLowerCase();
+  if (g.isEmpty) return true;
+  if (g == '?' || g == '？') return true;
+  if (g == 'n/a' || g == 'na' || g == 'none' || g == 'unknown') return true;
+  if (int.tryParse(g) == 0) return true;
+  return false;
+}
+
+/// Merges numeric bands `3` and `4` into a single bar labeled `4`.
+List<GradeHistogramBin> mergeNumericGrade34(List<GradeHistogramBin> bins) {
+  const mergedLabel = '4';
+  final merged = <String, int>{};
+  for (final b in bins) {
+    final k = b.grade.trim();
+    if (k == '3' || k == '4') {
+      merged[mergedLabel] = (merged[mergedLabel] ?? 0) + b.count;
+    } else {
+      merged[k] = (merged[k] ?? 0) + b.count;
+    }
+  }
+  final keys = merged.keys.toList()..sort(compareGradeLabels);
+  return keys
+      .map((k) => GradeHistogramBin(grade: k, count: merged[k]!))
+      .toList();
+}
+
+/// Plus-variant merge, drop unknown-grade bins, merge `3` + `4` for display.
+List<GradeHistogramBin> mergeGradeHistogramForDisplay(List<GradeHistogramBin> bins) {
+  final plusMerged = mergePlusGradeBins(bins);
+  final known =
+      plusMerged.where((b) => !isUnknownGradeLabel(b.grade)).toList();
+  return mergeNumericGrade34(known);
+}
+
 /// Sort key: numeric grades, then French-style `6a`…`9c`, then lexicographic fallback.
 int compareGradeLabels(String a, String b) {
   final ka = _sortKey(a);
