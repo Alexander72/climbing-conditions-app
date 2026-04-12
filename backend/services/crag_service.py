@@ -1,52 +1,16 @@
-"""Load local crag JSON by country; resolve which countries overlap a viewport bbox."""
+"""Crag catalog domain logic: bbox overlap, grade histograms, listing in viewport."""
 
 from __future__ import annotations
 
-import json
 import logging
-from pathlib import Path
 from typing import Any
+
+from repositories.crag_repository import CragRepository, default_crag_repository
 
 logger = logging.getLogger(__name__)
 
-BACKEND_ROOT = Path(__file__).resolve().parent.parent
-COUNTRY_BBOXES_PATH = BACKEND_ROOT / "data" / "crag_country_bboxes.json"
-CRAGS_DIR = BACKEND_ROOT / "data" / "crags"
-GRADES_PATH = BACKEND_ROOT / "data" / "grades.json"
-
 # Index into each grades.json row: lowercase French sport grade (e.g. 6a, 6b+).
 FRENCH_GRADE_INDEX = 4
-
-_crags_cache: dict[str, list[dict[str, Any]]] = {}
-_country_bboxes: dict[str, dict[str, float]] | None = None
-_grades_table: dict[str, Any] | None = None
-
-
-def _load_country_bboxes() -> dict[str, dict[str, float]]:
-    global _country_bboxes
-    if _country_bboxes is not None:
-        return _country_bboxes
-    if not COUNTRY_BBOXES_PATH.is_file():
-        logger.warning("Missing %s — no countries will match", COUNTRY_BBOXES_PATH)
-        _country_bboxes = {}
-        return _country_bboxes
-    with open(COUNTRY_BBOXES_PATH, encoding="utf-8") as f:
-        raw = json.load(f)
-    _country_bboxes = dict(raw.get("countries") or {})
-    return _country_bboxes
-
-
-def _load_grades_table() -> dict[str, Any]:
-    global _grades_table
-    if _grades_table is not None:
-        return _grades_table
-    if not GRADES_PATH.is_file():
-        logger.warning("Missing %s — grade labels fall back to raw codes", GRADES_PATH)
-        _grades_table = {}
-        return _grades_table
-    with open(GRADES_PATH, encoding="utf-8") as f:
-        _grades_table = json.load(f)
-    return _grades_table
 
 
 def bboxes_overlap(
@@ -71,8 +35,11 @@ def countries_overlapping_bbox(
     max_lat: float,
     min_lng: float,
     max_lng: float,
+    *,
+    repository: CragRepository | None = None,
 ) -> list[str]:
-    countries = _load_country_bboxes()
+    repo = repository or default_crag_repository
+    countries = repo.get_country_bboxes()
     out: list[str] = []
     for code, box in countries.items():
         try:
@@ -101,8 +68,8 @@ def _safe_int(value: Any) -> int | None:
         return None
 
 
-def _label_for_grade_code(code_str: str) -> str:
-    table = _load_grades_table()
+def _label_for_grade_code(code_str: str, repository: CragRepository) -> str:
+    table = repository.get_grades_table()
     row = table.get(code_str)
     if not isinstance(row, list) or len(row) <= FRENCH_GRADE_INDEX:
         return code_str
@@ -112,8 +79,13 @@ def _label_for_grade_code(code_str: str) -> str:
     return label.strip()
 
 
-def grade_histogram_from_route_counts(route_counts: Any) -> list[dict[str, Any]]:
+def grade_histogram_from_route_counts(
+    route_counts: Any,
+    *,
+    repository: CragRepository | None = None,
+) -> list[dict[str, Any]]:
     """Merge per-style grade buckets into one histogram (French labels, sorted by internal code)."""
+    repo = repository or default_crag_repository
     if not isinstance(route_counts, dict):
         return []
     merged: dict[str, int] = {}
@@ -129,7 +101,7 @@ def grade_histogram_from_route_counts(route_counts: Any) -> list[dict[str, Any]]
                 code_int = int(code_str)
             except (TypeError, ValueError):
                 code_int = 0
-            label = _label_for_grade_code(str(code_str))
+            label = _label_for_grade_code(str(code_str), repo)
             merged[label] = merged.get(label, 0) + n
             prev = sort_code.get(label, code_int)
             sort_code[label] = min(prev, code_int)
@@ -149,8 +121,13 @@ def coarse_grade_histogram_from_row(row: dict[str, Any]) -> list[dict[str, Any]]
     return bins
 
 
-def route_stats_from_row(row: dict[str, Any]) -> dict[str, Any]:
+def route_stats_from_row(
+    row: dict[str, Any],
+    *,
+    repository: CragRepository | None = None,
+) -> dict[str, Any]:
     """Optional API fields derived from raw catalog row."""
+    repo = repository or default_crag_repository
     out: dict[str, Any] = {}
     mapping = (
         ("route_count", "routeCount"),
@@ -163,28 +140,12 @@ def route_stats_from_row(row: dict[str, Any]) -> dict[str, Any]:
         v = _safe_int(row.get(src))
         if v is not None:
             out[dst] = v
-    hist = grade_histogram_from_route_counts(row.get("route_counts"))
+    hist = grade_histogram_from_route_counts(row.get("route_counts"), repository=repo)
     if not hist:
         hist = coarse_grade_histogram_from_row(row)
     if hist:
         out["gradeHistogram"] = hist
     return out
-
-
-def _load_raw_crags(country: str) -> list[dict[str, Any]]:
-    if country in _crags_cache:
-        return _crags_cache[country]
-    path = CRAGS_DIR / f"{country}.json"
-    if not path.is_file():
-        _crags_cache[country] = []
-        return []
-    with open(path, encoding="utf-8") as f:
-        raw = json.load(f)
-    rows = raw.get("crags")
-    if not isinstance(rows, list):
-        rows = []
-    _crags_cache[country] = rows
-    return rows
 
 
 def point_in_bbox(
@@ -205,12 +166,16 @@ def list_crags_in_bbox(
     max_lng: float,
     *,
     is_summary_only: bool,
+    repository: CragRepository | None = None,
 ) -> list[dict[str, Any]]:
     """Return crag DTO dicts for the API response."""
+    repo = repository or default_crag_repository
     seen: set[str] = set()
     result: list[dict[str, Any]] = []
-    for country in countries_overlapping_bbox(min_lat, max_lat, min_lng, max_lng):
-        for row in _load_raw_crags(country):
+    for country in countries_overlapping_bbox(
+        min_lat, max_lat, min_lng, max_lng, repository=repo
+    ):
+        for row in repo.load_crags_for_country(country):
             try:
                 lat = float(row["latitude"])
                 lng = float(row["longitude"])
@@ -240,6 +205,6 @@ def list_crags_in_bbox(
                 "country": country,
                 "isSummaryOnly": is_summary_only,
             }
-            dto.update(route_stats_from_row(row))
+            dto.update(route_stats_from_row(row, repository=repo))
             result.append(dto)
     return result

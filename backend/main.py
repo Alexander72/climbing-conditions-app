@@ -4,7 +4,7 @@ import traceback
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from routers import weather, crags
+from controllers import crags, weather
 
 logging.basicConfig(
     level=logging.INFO,

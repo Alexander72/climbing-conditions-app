@@ -2,7 +2,7 @@
 
 import pytest
 
-from services.crag_catalog import (
+from services.crag_service import (
     bboxes_overlap,
     coarse_grade_histogram_from_row,
     countries_overlapping_bbox,

@@ -4,7 +4,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from services.crag_catalog import countries_overlapping_bbox, list_crags_in_bbox
+from services.crag_service import countries_overlapping_bbox, list_crags_in_bbox
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

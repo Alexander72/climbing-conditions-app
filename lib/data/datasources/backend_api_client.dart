@@ -73,7 +73,19 @@ class BackendApiClient {
     );
 
     final historical = <HistoricalWeatherModel>[];
-    if (json['hourly'] != null) {
+    if (json['historical'] is List) {
+      // Server-built daily totals (One Call day_summary). One Call `hourly` is
+      // forecast-only, so it must not be used as history.
+      for (final item in json['historical'] as List<dynamic>) {
+        final itemMap = item as Map<String, dynamic>;
+        final rainRaw = itemMap['rain'];
+        historical.add(HistoricalWeatherModel(
+          dt: itemMap['dt'] as int,
+          temp: (itemMap['temp'] as num).toDouble(),
+          rain: rainRaw == null ? null : (rainRaw as num).toDouble(),
+        ));
+      }
+    } else if (json['hourly'] != null) {
       final hourly = json['hourly'] as List<dynamic>;
       final now = DateTime.now();
       final fiveDaysAgo = now.subtract(const Duration(days: 5));
