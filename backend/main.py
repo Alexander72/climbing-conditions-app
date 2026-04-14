@@ -1,10 +1,16 @@
 import logging
+import os
 import time
 import traceback
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
 from controllers import crags, weather
+
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,7 +19,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger("climbing-conditions-api")
 
-app = FastAPI(title="Climbing Conditions API", version="1.0.0")
+_enable_openapi_docs = os.getenv("ENABLE_OPENAPI_DOCS", "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
+_openapi_description = "API for climbing crag listings and weather."
+if _enable_openapi_docs:
+    _openapi_description += (
+        " Interactive OpenAPI (Swagger UI) at **/docs**; ReDoc at **/redoc**."
+    )
+
+app = FastAPI(
+    title="Climbing Conditions API",
+    version="1.0.0",
+    description=_openapi_description,
+    docs_url="/docs" if _enable_openapi_docs else None,
+    redoc_url="/redoc" if _enable_openapi_docs else None,
+    openapi_url="/openapi.json" if _enable_openapi_docs else None,
+    openapi_tags=[
+        {"name": "Health", "description": "Liveness and readiness probes."},
+        {"name": "Crags", "description": "Crag data within geographic bounding boxes."},
+        {"name": "Weather", "description": "Forecast and related weather for coordinates."},
+    ],
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,7 +90,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
 
 
-@app.get("/health")
+@app.get("/health", tags=["Health"], summary="Health check")
 async def health():
     return {"status": "ok"}
 

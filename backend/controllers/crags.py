@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from services.crag_service import countries_overlapping_bbox, list_crags_in_bbox
 
-router = APIRouter()
+router = APIRouter(tags=["Crags"])
 logger = logging.getLogger(__name__)
 
 
@@ -34,7 +34,13 @@ class CragsResponse(BaseModel):
     crags: list[CragItem]
 
 
-@router.get("/crags", response_model=CragsResponse)
+@router.get(
+    "/crags",
+    response_model=CragsResponse,
+    summary="Crags in bounding box",
+    description="Lists crags whose coordinates fall inside the given WGS84 bounding box.",
+    responses={400: {"description": "Invalid bounding box"}},
+)
 async def get_crags(
     min_lat: float = Query(..., description="Bounding box south latitude"),
     max_lat: float = Query(..., description="Bounding box north latitude"),
