@@ -1,0 +1,394 @@
+{
+    "crags": [
+      {
+        "id": 2082,
+        "name": "Berdorf",
+        "param_id": "berdorf-in-luxembourg",
+        "latitude": "49.831671",
+        "longitude": "6.34542",
+        "area": null,
+        "zoom": null,
+        "important": null,
+        "main_sector_id": null,
+        "country_id": 2262,
+        "access_status": "orange",
+        "access_info": "📢\\nClimbing in Berdorf is under big pressure. \\nPlease be extremely careful, respect nature, stick to the trails and carry out more than just your own trash. \\nBrush your holds when coming down.\\nDon't leave your gear lying in the middle of the hiking trails. \\n\\n🧗‍♀️\\nClimbing is only allowed in the indicated zones. No new routes are allowed. Trad climbing is not allowed.\\nThe use of chalk should be kept to a minimum, so make sure to bring along a brush and brush the holds (and tickmarks) after climbing. \\nIt is forbidden to top out onto the plateaus as well as abseil down from the top (both from trees or (old) anchors). \\n\\nRespect this place and leave it cleaner than you found it. Berdorf gets a huge pressure from both climbers and hikers, and the future of climbing in this fairy-forest is at stake. \\n\\nGetting to Berdorf: \\n🚗:\\nGetting to Berdorf is easy by car. You can park on the North and South side, but we recommend to take the North parking as indicated on the map. The South parking is outside of one of the campings. You will also find the opportunity for a cold beer at the mini-golf bar here. \\nThe North-side parking has a big picnic area and BBQ. Mind that camping here is forbidden\\n\\n🚂  🚌\\nBy public transportation: \\nFrom Luxembourg city, you can get to Berdorf by bus, which is relatively easy. Be prepared to change busses in Echternach or elsewhere. ",
+        "route_count": 226,
+        "sport_count": 226,
+        "trad_n_p_count": 0,
+        "boulder_count": 0,
+        "dws_count": 0,
+        "likes_count": 172,
+        "grade4_count": 21,
+        "grade5_count": 17,
+        "grade6_count": 86,
+        "grade7_count": 77,
+        "grade8_count": 25,
+        "grade9_count": 0,
+        "topo_count": 58,
+        "must_hide_topos": null,
+        "route_counts": {
+          "Sport": {
+            "0": 1,
+            "100": 6,
+            "150": 1,
+            "200": 6,
+            "250": 1,
+            "275": 6,
+            "300": 5,
+            "350": 2,
+            "380": 10,
+            "400": 13,
+            "450": 19,
+            "500": 14,
+            "550": 19,
+            "600": 12,
+            "650": 9,
+            "700": 11,
+            "750": 10,
+            "800": 14,
+            "850": 9,
+            "900": 14,
+            "950": 19,
+            "1000": 6,
+            "1050": 8,
+            "1100": 7,
+            "1150": 3,
+            "1200": 1
+          }
+        },
+        "created_at": "2010-12-28T12:58:15.000Z",
+        "updated_at": "2026-04-03T15:42:11.000Z",
+        "premium_topo_active": true,
+        "photo": {
+          "likes": {
+            "likes": [
+              {
+                "id": 250742,
+                "climber_id": 7994,
+                "votable_id": 375838,
+                "votable_type": "Photo",
+                "weight": 1,
+                "created_at": "2025-01-11T10:10:11.000Z",
+                "updated_at": "2025-01-11T10:10:11.000Z"
+              }
+            ],
+            "type": "Photo",
+            "id": 375838
+          },
+          "id": 375838,
+          "album_id": 2082,
+          "album_type": "Crag",
+          "photographer": "LieseLotte P.",
+          "route_or_problem": null,
+          "caption": "Xander in \"Undercover Angel\"",
+          "route_id": null,
+          "vote_sum": 1,
+          "created_at": "2025-01-10T17:06:50.000Z",
+          "updated_at": "2026-01-17T02:38:08.000Z",
+          "styles": {
+            "small": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/375/375838/small-dd93d51f2980f13dc787a23aea20acd5.jpg",
+              "dimensions": [
+                80,
+                80
+              ]
+            },
+            "huge": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/375/375838/huge-60a8a7e790e3c3344a7f9b89a0a27485.jpg",
+              "dimensions": [
+                760,
+                507
+              ]
+            },
+            "size_s": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/375/375838/size_s-532f3b7a028a738d9573d0849fb1d071.jpg",
+              "dimensions": [
+                160,
+                160
+              ]
+            },
+            "size_m": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/375/375838/size_m-36cfcd4e633a563c3941a837776ec3a4.jpg",
+              "dimensions": [
+                382,
+                236
+              ]
+            },
+            "size_l": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/375/375838/size_l-fe99a71822b07331d49843d14456714d.jpg",
+              "dimensions": [
+                1120,
+                747
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 8407,
+        "name": "Ferschweiler, Germany",
+        "param_id": "ferschweiler-germany",
+        "latitude": "49.861448",
+        "longitude": "6.405012",
+        "area": null,
+        "zoom": null,
+        "important": null,
+        "main_sector_id": null,
+        "country_id": 2262,
+        "access_status": null,
+        "access_info": "",
+        "route_count": 8,
+        "sport_count": 0,
+        "trad_n_p_count": 0,
+        "boulder_count": 8,
+        "dws_count": 0,
+        "likes_count": 3,
+        "grade4_count": 0,
+        "grade5_count": 0,
+        "grade6_count": 7,
+        "grade7_count": 1,
+        "grade8_count": 0,
+        "grade9_count": 0,
+        "topo_count": 0,
+        "must_hide_topos": null,
+        "route_counts": {
+          "Boulder": {
+            "550": 1,
+            "600": 2,
+            "650": 4,
+            "700": 1
+          }
+        },
+        "created_at": "2013-07-18T12:03:33.000Z",
+        "updated_at": "2026-01-30T13:21:04.000Z",
+        "premium_topo_active": false,
+        "photo": {
+          "likes": {
+            "likes": [],
+            "type": "Photo",
+            "id": 226639
+          },
+          "id": 226639,
+          "album_id": 8407,
+          "album_type": "Crag",
+          "photographer": "Kay Lukas (Lukas7)",
+          "route_or_problem": null,
+          "caption": "Ich fang hier mal an die Kletterfelsen zu posten und hoffe es füllt sich etwas mit der Zeit",
+          "route_id": null,
+          "vote_sum": 0,
+          "created_at": "2021-02-02T13:34:48.000Z",
+          "updated_at": "2026-01-04T04:22:45.000Z",
+          "styles": {
+            "small": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/226/226639/small-caa4d6d7cd1b.jpg",
+              "dimensions": [
+                80,
+                80
+              ]
+            },
+            "huge": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/226/226639/huge-e2a8d0dcbc21.jpg",
+              "dimensions": [
+                570,
+                760
+              ]
+            },
+            "size_s": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/226/226639/size_s-caa4d6d7cd1b.jpg",
+              "dimensions": [
+                160,
+                160
+              ]
+            },
+            "size_m": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/226/226639/size_m-d6d7cd1be2a8.jpg",
+              "dimensions": [
+                382,
+                236
+              ]
+            },
+            "size_l": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/226/226639/size_l-cd1be2a8d0dc.jpg",
+              "dimensions": [
+                840,
+                1120
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 24225,
+        "name": "Audun le Tiche",
+        "param_id": "audun-le-tiche",
+        "latitude": "49.461033",
+        "longitude": "5.964368",
+        "area": null,
+        "zoom": null,
+        "important": null,
+        "main_sector_id": null,
+        "country_id": 385,
+        "access_status": "orange",
+        "access_info": "‼️‼️SITE CLOSED FOR 3 MONTHS APRIL 3 2026- JULY 3 2026 (subject to change)‼️‼️\\n \\nDue to accident respect this closure!!\\n\\n1) Leave nothing behind and be respectful to others, areas closed with construction tape or signs are off limits. NO fires NO camping\\nThis crag was closed for over 5 years already please be respectful so it can remain open in the future.\\n\\n!HELMETS MUST BE WORN AT ALL TIMES BY MINORS! Please also wear one as an adult!\\n\\n2) From Audun-le-Tiche (Town) drive south on D16 then the Parking lot will be right next to the road to the left side. Only Park in the designated area and be sure not to block others. The Parking lot is indicated on the map.\\n\\n3) From the parking lot it only takes 2 minutes to reach the crag and the path is clearly marked. Have fun climbing. ",
+        "route_count": 147,
+        "sport_count": 147,
+        "trad_n_p_count": 0,
+        "boulder_count": 0,
+        "dws_count": 0,
+        "likes_count": 20,
+        "grade4_count": 21,
+        "grade5_count": 40,
+        "grade6_count": 61,
+        "grade7_count": 24,
+        "grade8_count": 1,
+        "grade9_count": 0,
+        "topo_count": 23,
+        "must_hide_topos": null,
+        "route_counts": {
+          "Sport": {
+            "100": 6,
+            "200": 9,
+            "250": 6,
+            "300": 17,
+            "350": 23,
+            "400": 21,
+            "450": 8,
+            "500": 16,
+            "550": 8,
+            "600": 5,
+            "650": 3,
+            "700": 14,
+            "750": 3,
+            "800": 4,
+            "850": 1,
+            "900": 2,
+            "1000": 1
+          }
+        },
+        "created_at": "2021-05-18T10:28:12.000Z",
+        "updated_at": "2026-04-04T18:19:43.000Z",
+        "premium_topo_active": true,
+        "photo": {
+          "likes": {
+            "likes": [
+              {
+                "id": 278018,
+                "climber_id": 7994,
+                "votable_id": 396009,
+                "votable_type": "Photo",
+                "weight": 1,
+                "created_at": "2025-06-07T15:56:14.000Z",
+                "updated_at": "2025-06-07T15:56:14.000Z"
+              }
+            ],
+            "type": "Photo",
+            "id": 396009
+          },
+          "id": 396009,
+          "album_id": 24225,
+          "album_type": "Crag",
+          "photographer": "",
+          "route_or_problem": null,
+          "caption": "Le roi des fourmis",
+          "route_id": null,
+          "vote_sum": 1,
+          "created_at": "2025-06-07T10:30:35.000Z",
+          "updated_at": "2026-01-18T09:12:57.000Z",
+          "styles": {
+            "small": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/396/396009/small-44c07846a5d1520937db5818ac20524a.jpg",
+              "dimensions": [
+                80,
+                80
+              ]
+            },
+            "huge": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/396/396009/huge-44e8f7d89fe202659e4c4afddef0abda.jpg",
+              "dimensions": [
+                343,
+                760
+              ]
+            },
+            "size_s": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/396/396009/size_s-b7154f671bd49616bd2d5fc5df148591.jpg",
+              "dimensions": [
+                160,
+                160
+              ]
+            },
+            "size_m": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/396/396009/size_m-f052ac23a387ff257542ab17becc21c8.jpg",
+              "dimensions": [
+                382,
+                236
+              ]
+            },
+            "size_l": {
+              "url": "https://storage.e5gc6.upcloudobjects.com/photos/000/396/396009/size_l-e8b53ab9ac319ca011c89d41ecd74635.jpg",
+              "dimensions": [
+                505,
+                1120
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 33946,
+        "name": "Igler Klettergarten",
+        "param_id": "igler-klettergarten",
+        "latitude": "49.716288",
+        "longitude": "6.538318",
+        "area": null,
+        "zoom": null,
+        "important": null,
+        "main_sector_id": null,
+        "country_id": 651,
+        "access_status": null,
+        "access_info": "",
+        "route_count": 77,
+        "sport_count": 77,
+        "trad_n_p_count": 0,
+        "boulder_count": 0,
+        "dws_count": 0,
+        "likes_count": 0,
+        "grade4_count": 15,
+        "grade5_count": 28,
+        "grade6_count": 24,
+        "grade7_count": 9,
+        "grade8_count": 1,
+        "grade9_count": 0,
+        "topo_count": 0,
+        "must_hide_topos": null,
+        "route_counts": {
+          "Sport": {
+            "100": 2,
+            "150": 1,
+            "200": 5,
+            "250": 7,
+            "300": 11,
+            "350": 14,
+            "370": 3,
+            "400": 4,
+            "450": 7,
+            "500": 7,
+            "550": 2,
+            "600": 1,
+            "650": 3,
+            "700": 1,
+            "750": 2,
+            "800": 3,
+            "850": 1,
+            "900": 1,
+            "950": 1,
+            "1000": 1
+          }
+        },
+        "created_at": "2024-03-31T12:00:36.000Z",
+        "updated_at": "2025-10-06T11:46:12.000Z",
+        "premium_topo_active": false,
+        "photo": null
+      }
+    ]
+  }
