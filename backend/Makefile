@@ -1,10 +1,14 @@
-.PHONY: dev build deploy deploy-guided local package test clean
+.PHONY: dev build deploy deploy-guided local package test clean ensure-weather-cache-table
 
 # ── Local development ────────────────────────────────────────────────────────
 
 # Fastest iteration: plain Python with hot-reload
 dev:
 	uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# One-time (or idempotent) DynamoDB Local table for WEATHER_CACHE_TABLE — loads .env
+ensure-weather-cache-table:
+	PYTHONPATH=. python weather_cache_table_setup.py
 
 # Local Lambda emulation via SAM (requires sam CLI and env.json)
 local: build

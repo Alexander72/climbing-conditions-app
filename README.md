@@ -32,6 +32,17 @@ Install Android Studio and the Android SDK, then connect a device or start an em
 flutter run -d android
 ```
 
+### Backend API (Docker)
+
+The FastAPI service and DynamoDB Local are started from **`backend/`**:
+
+```bash
+cd backend
+docker compose up --build
+```
+
+After DynamoDB Local is up, create the weather cache table once — see **Weather cache table** in [backend/README.md](backend/README.md).
+
 ### Weather API key
 
 For live weather data, run with your OpenWeatherMap API key:

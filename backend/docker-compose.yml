@@ -1,12 +1,20 @@
 services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    ports:
+      - "8001:8000"
+
   backend:
-    build: ./backend
+    build: .
+    depends_on:
+      - dynamodb-local
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     env_file:
-      - ./backend/.env
+      - path: .env
+        required: true
     volumes:
-      - ./backend:/app
+      - .:/app
     command:
       [
         "uvicorn",
@@ -17,7 +25,4 @@ services:
         "8000",
         "--reload",
       ]
-    environment:
-      # Reliable reload when the app runs in Docker Desktop (macOS/Windows)
-      WATCHFILES_FORCE_POLLING: "true"
     restart: unless-stopped

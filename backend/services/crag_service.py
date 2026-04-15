@@ -159,6 +159,49 @@ def point_in_bbox(
     return min_lat <= lat <= max_lat and min_lng <= lng <= max_lng
 
 
+def crag_id_for_catalog_row(country: str, row: dict[str, Any], lat: float, lng: float) -> str:
+    """Public crag id string (same rules as ``list_crags_in_bbox``)."""
+    param_id = row.get("param_id")
+    nid = row.get("id")
+    if param_id:
+        return f"{country}:{param_id}"
+    if nid is not None:
+        return f"{country}:{nid}"
+    return f"{country}:{lat:.6f},{lng:.6f}"
+
+
+def find_crag_by_id(
+    crag_id: str,
+    *,
+    repository: CragRepository | None = None,
+) -> dict[str, Any] | None:
+    """First catalog row whose computed id equals ``crag_id`` (countries lexicographic, file order)."""
+    repo = repository or default_crag_repository
+    for country in sorted(repo.get_country_bboxes().keys()):
+        for row in repo.load_crags_for_country(country):
+            try:
+                lat = float(row["latitude"])
+                lng = float(row["longitude"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if crag_id_for_catalog_row(country, row, lat, lng) != crag_id:
+                continue
+            name = row.get("name")
+            if not name or not isinstance(name, str):
+                name = "Unknown crag"
+            dto: dict[str, Any] = {
+                "id": crag_id,
+                "name": name,
+                "latitude": lat,
+                "longitude": lng,
+                "country": country,
+                "isSummaryOnly": False,
+            }
+            dto.update(route_stats_from_row(row, repository=repo))
+            return dto
+    return None
+
+
 def list_crags_in_bbox(
     min_lat: float,
     max_lat: float,
@@ -183,14 +226,7 @@ def list_crags_in_bbox(
                 continue
             if not point_in_bbox(lat, lng, min_lat, max_lat, min_lng, max_lng):
                 continue
-            param_id = row.get("param_id")
-            nid = row.get("id")
-            if param_id:
-                crag_id = f"{country}:{param_id}"
-            elif nid is not None:
-                crag_id = f"{country}:{nid}"
-            else:
-                crag_id = f"{country}:{lat:.6f},{lng:.6f}"
+            crag_id = crag_id_for_catalog_row(country, row, lat, lng)
             if crag_id in seen:
                 continue
             seen.add(crag_id)

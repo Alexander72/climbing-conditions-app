@@ -1,0 +1,37 @@
+{
+  "reference_now_utc": "2026-04-14T12:00:00+00:00",
+  "crag": {
+    "aspect": "north",
+    "rock_type": "sandstone",
+    "climbing_types": ["sport"]
+  },
+  "merged_weather": {
+    "current": {
+      "temp": 14.0,
+      "humidity": 50.0,
+      "wind_speed": 4.0,
+      "dt": 1776168000,
+      "rain": {}
+    },
+    "historical": [
+      {
+        "dt": 1775952000,
+        "temp": 10.0,
+        "rain": 3.0
+      }
+    ]
+  },
+  "expected": {
+    "conditionScore": 15,
+    "conditionRecommendation": "dangerous",
+    "conditionFactors": [
+      "Rain 2 days ago - drying conditions",
+      "Temperature good (14.0°C)",
+      "North-facing: Slower drying, more shade",
+      "Sandstone: Very sensitive to moisture, brittle when wet",
+      "Sport climbing: More forgiving conditions",
+      "CRITICAL: Sandstone + North-facing + Recent rain = Very dangerous conditions"
+    ],
+    "conditionLastUpdated": 1776168000
+  }
+}

@@ -33,23 +33,38 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
   }
 
-  /// Removes null values and JSON-encodes List values from a map.
-  /// sqflite_common_ffi_web does not support null or List in its serialization
-  /// protocol; nulls are omitted (leaving the column NULL) and lists are stored
-  /// as JSON text.
+  /// Removes null values, JSON-encodes [List] values, and stores [bool] as 0/1.
+  ///
+  /// sqflite_common_ffi_web only accepts num, String, and Uint8List for insert
+  /// arguments (no bool, no List, no null in the map).
   static Map<String, Object> _sanitizeMap(Map<String, dynamic> map) {
     return Map.fromEntries(
       map.entries.where((e) => e.value != null).map((e) {
-        final value = e.value is List ? jsonEncode(e.value) : e.value;
-        return MapEntry(e.key, value as Object);
+        final v = e.value;
+        final Object serialized;
+        if (v is List) {
+          serialized = jsonEncode(v);
+        } else if (v is bool) {
+          serialized = v ? 1 : 0;
+        } else {
+          serialized = v as Object;
+        }
+        return MapEntry(e.key, serialized);
       }),
     );
+  }
+
+  static bool _boolFromSqlColumn(dynamic v) {
+    if (v is bool) return v;
+    if (v is int) return v != 0;
+    if (v is num) return v != 0;
+    return false;
   }
 
   /// Decodes JSON-encoded list columns back to Dart lists so that
@@ -60,7 +75,14 @@ class AppDatabase {
       'climbingTypes': map['climbingTypes'] is String
           ? jsonDecode(map['climbingTypes'] as String)
           : map['climbingTypes'],
-      'isSummaryOnly': (map['isSummaryOnly'] as int? ?? 0) == 1,
+      'conditionFactors': map['conditionFactors'] == null
+          ? null
+          : (map['conditionFactors'] is String
+              ? List<String>.from(
+                  jsonDecode(map['conditionFactors'] as String) as List<dynamic>,
+                )
+              : map['conditionFactors']),
+      'isSummaryOnly': _boolFromSqlColumn(map['isSummaryOnly']),
     };
   }
 
@@ -79,6 +101,14 @@ class AppDatabase {
       await db.execute('ALTER TABLE crags ADD COLUMN boulderCount INTEGER');
       await db.execute('ALTER TABLE crags ADD COLUMN dwsCount INTEGER');
       await db.execute('ALTER TABLE crags ADD COLUMN gradeHistogram TEXT');
+    }
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE crags ADD COLUMN weatherCellId TEXT');
+      await db.execute('ALTER TABLE crags ADD COLUMN conditionScore INTEGER');
+      await db.execute('ALTER TABLE crags ADD COLUMN conditionRecommendation TEXT');
+      await db.execute('ALTER TABLE crags ADD COLUMN conditionFactors TEXT');
+      await db.execute('ALTER TABLE crags ADD COLUMN conditionLastUpdated INTEGER');
+      await db.execute('ALTER TABLE crags ADD COLUMN weatherAsOf TEXT');
     }
   }
 
@@ -102,7 +132,13 @@ class AppDatabase {
         tradNPCount INTEGER,
         boulderCount INTEGER,
         dwsCount INTEGER,
-        gradeHistogram TEXT
+        gradeHistogram TEXT,
+        weatherCellId TEXT,
+        conditionScore INTEGER,
+        conditionRecommendation TEXT,
+        conditionFactors TEXT,
+        conditionLastUpdated INTEGER,
+        weatherAsOf TEXT
       )
     ''');
 

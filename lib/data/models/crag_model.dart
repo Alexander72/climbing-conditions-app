@@ -75,6 +75,19 @@ class CragModel {
   @JsonKey(fromJson: _gradeHistogramFromJson, toJson: _gradeHistogramToJson)
   final List<GradeHistogramBinModel>? gradeHistogram;
 
+  @JsonKey(name: 'weatherCellId')
+  final String? weatherCellId;
+  @JsonKey(name: 'conditionScore')
+  final int? conditionScore;
+  @JsonKey(name: 'conditionRecommendation')
+  final String? conditionRecommendation;
+  @JsonKey(name: 'conditionFactors')
+  final List<String>? conditionFactors;
+  @JsonKey(name: 'conditionLastUpdated')
+  final int? conditionLastUpdated;
+  @JsonKey(name: 'weatherAsOf')
+  final String? weatherAsOf;
+
   CragModel({
     required this.id,
     required this.name,
@@ -93,6 +106,12 @@ class CragModel {
     this.boulderCount,
     this.dwsCount,
     this.gradeHistogram,
+    this.weatherCellId,
+    this.conditionScore,
+    this.conditionRecommendation,
+    this.conditionFactors,
+    this.conditionLastUpdated,
+    this.weatherAsOf,
   });
 
   factory CragModel.fromJson(Map<String, dynamic> json) =>
@@ -126,6 +145,12 @@ class CragModel {
                 (b) => GradeHistogramBinModel(grade: b.grade, count: b.count),
               )
               .toList(),
+      weatherCellId: crag.weatherCellId,
+      conditionScore: crag.conditionScore,
+      conditionRecommendation: crag.conditionRecommendation,
+      conditionFactors: crag.conditionFactors,
+      conditionLastUpdated: crag.conditionLastUpdated,
+      weatherAsOf: crag.weatherAsOf,
     );
   }
 
@@ -157,6 +182,12 @@ class CragModel {
       ),
       isSummaryOnly: isSummaryOnly,
       routeStats: _routeStatsToEntity(),
+      weatherCellId: weatherCellId,
+      conditionScore: conditionScore,
+      conditionRecommendation: conditionRecommendation,
+      conditionFactors: conditionFactors,
+      conditionLastUpdated: conditionLastUpdated,
+      weatherAsOf: weatherAsOf,
     );
   }
 

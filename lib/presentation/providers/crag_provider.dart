@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import '../../domain/entities/crag.dart';
+import '../../domain/entities/weather.dart';
 import '../../domain/entities/crag_source.dart';
 import '../../data/repositories/crag_repository.dart';
 
@@ -22,6 +23,9 @@ class CragProvider with ChangeNotifier {
   final Set<String> _summaryBBoxKeys = {};
   final Set<String> _detailedBBoxKeys = {};
 
+  /// Last `weatherPartial` from a detailed bbox fetch (API cell cap).
+  bool _viewportWeatherPartial = false;
+
   CragProvider({CragRepository? repository})
       : _repository = repository ?? CragRepository();
 
@@ -35,6 +39,8 @@ class CragProvider with ChangeNotifier {
 
   /// Current zoom level — exposed so the list screen can read it.
   double get currentZoom => _currentZoom;
+
+  bool get viewportWeatherPartial => _viewportWeatherPartial;
 
   /// Crags filtered to the current viewport.
   /// - zoom < 7  → empty list (nothing shown)
@@ -150,13 +156,14 @@ class CragProvider with ChangeNotifier {
 
     try {
       if (isDetailed) {
-        await _repository.refreshDetailedCragsByBBox(
+        _viewportWeatherPartial = await _repository.refreshDetailedCragsByBBox(
           minLat: minLat,
           maxLat: maxLat,
           minLng: minLng,
           maxLng: maxLng,
         );
       } else {
+        _viewportWeatherPartial = false;
         await _repository.refreshSummaryCragsByBBox(
           minLat: minLat,
           maxLat: maxLat,
@@ -172,6 +179,11 @@ class CragProvider with ChangeNotifier {
       _isFetchingViewport = false;
       notifyListeners();
     }
+  }
+
+  /// Loads one crag from `GET /api/crags/{id}` and persists; returns merged weather when present.
+  Future<({Crag crag, Weather? weather})?> loadCragDetailFromBackend(String id) {
+    return _repository.fetchCragDetailFromBackend(id);
   }
 
   @override

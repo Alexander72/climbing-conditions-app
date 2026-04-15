@@ -26,6 +26,14 @@ CragModel _$CragModelFromJson(Map<String, dynamic> json) => CragModel(
   boulderCount: (json['boulderCount'] as num?)?.toInt(),
   dwsCount: (json['dwsCount'] as num?)?.toInt(),
   gradeHistogram: _gradeHistogramFromJson(json['gradeHistogram']),
+  weatherCellId: json['weatherCellId'] as String?,
+  conditionScore: (json['conditionScore'] as num?)?.toInt(),
+  conditionRecommendation: json['conditionRecommendation'] as String?,
+  conditionFactors: (json['conditionFactors'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  conditionLastUpdated: (json['conditionLastUpdated'] as num?)?.toInt(),
+  weatherAsOf: json['weatherAsOf'] as String?,
 );
 
 Map<String, dynamic> _$CragModelToJson(CragModel instance) => <String, dynamic>{
@@ -46,4 +54,10 @@ Map<String, dynamic> _$CragModelToJson(CragModel instance) => <String, dynamic>{
   'boulderCount': instance.boulderCount,
   'dwsCount': instance.dwsCount,
   'gradeHistogram': _gradeHistogramToJson(instance.gradeHistogram),
+  'weatherCellId': instance.weatherCellId,
+  'conditionScore': instance.conditionScore,
+  'conditionRecommendation': instance.conditionRecommendation,
+  'conditionFactors': instance.conditionFactors,
+  'conditionLastUpdated': instance.conditionLastUpdated,
+  'weatherAsOf': instance.weatherAsOf,
 };

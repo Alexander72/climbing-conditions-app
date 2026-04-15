@@ -56,6 +56,7 @@ class OpenWeatherClient:
             "appid": api_key,
             "units": units,
         }
+        logger.info("OpenWeather One Call GET base_url=%s lat=%s lon=%s", base_url, lat, lon)
         return await client.get(base_url, params=params)
 
     @staticmethod
@@ -76,6 +77,13 @@ class OpenWeatherClient:
             "units": units,
         }
         try:
+            logger.info(
+                "OpenWeather day_summary GET url=%s lat=%s lon=%s date=%s",
+                url,
+                lat,
+                lon,
+                day.isoformat(),
+            )
             response = await client.get(url, params=params)
             if response.status_code != 200:
                 logger.warning(

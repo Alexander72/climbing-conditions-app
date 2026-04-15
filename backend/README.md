@@ -48,7 +48,40 @@ Optional route fields are omitted when missing from the source row. `gradeHistog
 |----------|----------|---------|-------------|
 | `OPENWEATHER_API_KEY` | **Yes** | — | OpenWeatherMap One Call API 3.0 key |
 | `OPENWEATHER_BASE_URL` | No | `https://api.openweathermap.org/data/3.0/onecall` | OWM endpoint (override for testing) |
-| `BACKEND_PORT` | No | `8000` | Host port mapped in `docker-compose.yml` |
+| `WEATHER_CACHE_TABLE` | **Yes** (Lambda / full weather path) | — | DynamoDB table name for the weather cell cache (see SAM stack output) |
+| `AWS_ENDPOINT_URL_DYNAMODB` | No | — | Set for DynamoDB Local in Compose (e.g. `http://dynamodb-local:8000`); omit in Lambda |
+| `AWS_REGION` | No | `eu-west-1` | AWS region for DynamoDB clients |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | No | — | Dummy `local` values are set in Compose for DynamoDB Local only |
+| `BACKEND_PORT` | No | `8000` | Host port mapped in `backend/docker-compose.yml` (used for `${BACKEND_PORT}` when you run Compose from `backend/`) |
+
+---
+
+## Weather cache table (DynamoDB)
+
+The API expects a DynamoDB table named by **`WEATHER_CACHE_TABLE`** when weather caching is in use. The app **does not** create that table on startup.
+
+| Where you run | What to do |
+|---------------|------------|
+| **AWS (SAM deploy)** | CloudFormation creates `climbing-conditions-weather-${Stage}`. Set **`WEATHER_CACHE_TABLE`** in Lambda to that name (the template does this). No separate script. |
+| **DynamoDB Local** (Docker Compose or host on port **8001**) | From **`backend/`**, with **`backend/.env`** configured (including **`AWS_ENDPOINT_URL_DYNAMODB`** when using Local), run **once** after DynamoDB Local is reachable: `make ensure-weather-cache-table` or `python weather_cache_table_setup.py`. Safe to re-run (idempotent: `describe_table`, then `create_table` + TTL only if missing). |
+
+**Docker Compose (first time or after wiping Local):** with the stack up (or at least **dynamodb-local** healthy), from **`backend/`**:
+
+```bash
+docker compose run --rm backend python weather_cache_table_setup.py
+```
+
+Then start or restart the **backend** service as usual.
+
+### Viewing tables in a browser (DynamoDB Local)
+
+[Dynamodb-admin](https://www.npmjs.com/package/dynamodb-admin) lists and edits items in a table UI. It defaults to access key **`key`** / **`secret`**; this backend uses **`local` / `local`** with DynamoDB Local (see `.env.example`), so pass the same env vars as below or the UI may show **no tables**. **DynamoDB Local** is on the host at port **8001**; use **`-p 8002`** (or another free port) for the admin web server so it does not clash with DynamoDB’s port **8001** in `docker-compose.yml`.
+
+```bash
+AWS_REGION=eu-west-1 AWS_ACCESS_KEY_ID=local AWS_SECRET_ACCESS_KEY=local npx dynamodb-admin --dynamo-endpoint http://localhost:8001 -p 8002 -o
+```
+
+`-o` opens the UI in your default browser.
 
 ---
 
@@ -62,7 +95,8 @@ Three options — pick the one that suits your setup.
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # fill in OPENWEATHER_API_KEY
+cp .env.example .env          # fill in OPENWEATHER_API_KEY + WEATHER_CACHE_TABLE / AWS_* if using DynamoDB Local
+# If using DynamoDB Local: start it, then once — make ensure-weather-cache-table
 uvicorn main:app --reload
 ```
 
@@ -80,11 +114,18 @@ flutter run --dart-define=BACKEND_BASE_URL=http://localhost:8000
 ### Option B — Docker Compose (no Python install needed)
 
 ```bash
-cp backend/.env.example backend/.env   # fill in OPENWEATHER_API_KEY
+cd backend
+cp .env.example .env   # fill in OPENWEATHER_API_KEY
 docker compose up --build
+# In another terminal (after dynamodb-local is up), once per fresh volume:
+docker compose run --rm backend python weather_cache_table_setup.py
 ```
 
 API available at `http://localhost:8000`.
+
+### Docker
+
+Compose is defined in **`backend/docker-compose.yml`**. From the **`backend/`** directory, run `docker compose up` (optionally `--build`). The **`Dockerfile`** builder stage installs **`gcc`/`g++`** so **`python-geohash`** can compile its native extension inside **`python:3.12-slim`** (the final runtime image stays slim). Docker Compose loads **`backend/.env`** for both container environment and interpolation of `${BACKEND_PORT}` in the compose file. The **backend** service listens at `http://localhost:${BACKEND_PORT:-8000}`. **DynamoDB Local** is on the host at **`http://localhost:8001`** (e.g. `aws dynamodb list-tables --endpoint-url http://localhost:8001`). Create the weather cache table with the one-off command above or **`make ensure-weather-cache-table`** on the host (see **Weather cache table**).
 
 ---
 
@@ -104,6 +145,8 @@ API available at `http://localhost:3000`.
 
 > `env.json` is gitignored — it holds your plaintext key for local use only.
 
+Set `WEATHER_CACHE_TABLE` in `env.json` to the name of an existing table (for example the `climbing-conditions-weather-dev` table from a deployed stack, or a local table if you point `AWS_ENDPOINT_URL_DYNAMODB` at DynamoDB Local on the host).
+
 ---
 
 ## Deploying to AWS
@@ -111,7 +154,8 @@ API available at `http://localhost:3000`.
 The stack is defined in `template.yaml` (AWS SAM). It creates:
 - A Python 3.12 Lambda function
 - An HTTP API Gateway (v2) forwarding all routes to the Lambda (no stage prefix — `$default` stage)
-- An IAM policy granting the Lambda read access to SSM Parameter Store
+- A DynamoDB table `climbing-conditions-weather-${Stage}` (pay-per-request, TTL on attribute `ttl`) for caching OpenWeather responses per geohash cell
+- An IAM policy granting the Lambda read access to SSM Parameter Store, plus `GetItem` / `BatchGetItem` / `PutItem` on that table
 - The API key is fetched from SSM at Lambda cold-start and never stored in plaintext
 
 ### Prerequisites
@@ -187,6 +231,7 @@ flutter run --dart-define=BACKEND_BASE_URL=https://<api-id>.execute-api.<region>
 
 ```
 make dev            Plain Python uvicorn with hot-reload (port 8000)
+make ensure-weather-cache-table   Create DynamoDB Local table from .env (one-time / idempotent)
 make local          SAM build (--use-container) + local Lambda emulation (port 3000)
 make build          sam build --use-container — packages deps into .aws-sam/
 make deploy-guided  First-time interactive SAM deploy
@@ -206,11 +251,13 @@ make clean          Remove .aws-sam/, deployment zips
 backend/
 ├── main.py                  # FastAPI app, CORS + logging middleware
 ├── lambda_function.py       # Lambda entrypoint (Mangum ASGI adapter)
+├── weather_cache_table_setup.py  # DynamoDB table ensure (local endpoint / Lambda describe)
 ├── routers/
 │   ├── weather.py           # GET /api/weather — proxies OpenWeatherMap
 │   └── crags.py             # GET /api/crags — local JSON catalog + bbox
 ├── services/
-│   └── crag_catalog.py      # Country bbox overlap, load crags/*.json
+│   ├── weather_resolution_service.py  # Cell weather: Dynamo cache + OWM (§4)
+│   └── crag_service.py      # Country bbox overlap, list crags in bbox
 ├── data/
 │   ├── crag_country_bboxes.json
 │   └── crags/               # e.g. be.json — one file per ISO country code
@@ -218,6 +265,7 @@ backend/
 ├── template.yaml            # AWS SAM template (Lambda + API Gateway)
 ├── Makefile                 # Dev, build, and deploy shortcuts
 ├── Dockerfile               # Container image (for Docker Compose / ECS)
+├── docker-compose.yml       # backend + dynamodb-local (run from this directory)
 ├── requirements.txt         # All deps incl. uvicorn (local dev)
 ├── requirements-lambda.txt  # Production deps only (no uvicorn)
 ├── .env.example             # Local env template — copy to .env

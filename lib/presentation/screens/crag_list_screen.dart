@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/crag_provider.dart';
-import '../providers/weather_provider.dart';
-import '../providers/condition_provider.dart';
 import '../widgets/crag_card.dart';
-import '../../domain/entities/crag.dart';
-import '../../domain/entities/condition.dart';
 import 'crag_detail_screen.dart';
 import 'add_crag_screen.dart';
 
@@ -47,7 +43,6 @@ class _CragListScreenState extends State<CragListScreen> {
         final isDetailed = cragProvider.isDetailedZoom;
         final zoom = cragProvider.currentZoom;
 
-        // Apply filters (only meaningful in detailed mode, but harmless otherwise)
         if (_selectedRockType != null) {
           crags = crags
               .where((c) => c.rockType.name == _selectedRockType)
@@ -62,7 +57,13 @@ class _CragListScreenState extends State<CragListScreen> {
         return Scaffold(
           body: Column(
             children: [
-              _buildInfoBar(context, zoom, crags.length, cragProvider.isFetchingViewport),
+              _buildInfoBar(
+                context,
+                zoom,
+                crags.length,
+                cragProvider.isFetchingViewport,
+                cragProvider.viewportWeatherPartial,
+              ),
               _buildFilters(context),
               Expanded(
                 child: crags.isEmpty
@@ -86,21 +87,16 @@ class _CragListScreenState extends State<CragListScreen> {
                                     );
                                   },
                                 )
-                              : FutureBuilder<Condition?>(
-                                  future: _getConditionForCrag(context, crag),
-                                  builder: (context, snapshot) {
-                                    return CragCard(
-                                      crag: crag,
-                                      condition: snapshot.data,
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                CragDetailScreen(crag: crag),
-                                          ),
-                                        );
-                                      },
+                              : CragCard(
+                                  crag: crag,
+                                  condition: crag.backendDerivedCondition,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            CragDetailScreen(crag: crag),
+                                      ),
                                     );
                                   },
                                 );
@@ -130,6 +126,7 @@ class _CragListScreenState extends State<CragListScreen> {
     double zoom,
     int count,
     bool isFetching,
+    bool weatherPartial,
   ) {
     final String message;
     if (zoom < 7.0) {
@@ -151,11 +148,24 @@ class _CragListScreenState extends State<CragListScreen> {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                ),
+                if (weatherPartial && zoom > 9.0)
+                  Text(
+                    'Weather for some crags is omitted (viewport cell cap).',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
                   ),
+              ],
             ),
           ),
           if (isFetching)
@@ -221,8 +231,8 @@ class _CragListScreenState extends State<CragListScreen> {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child:             DropdownButtonFormField<String>(
-              initialValue: _selectedAspect,
+            child: DropdownButtonFormField<String>(
+              value: _selectedAspect,
               decoration: const InputDecoration(
                 labelText: 'Aspect',
                 border: OutlineInputBorder(),
@@ -244,27 +254,5 @@ class _CragListScreenState extends State<CragListScreen> {
         ],
       ),
     );
-  }
-
-  Future<Condition?> _getConditionForCrag(
-    BuildContext context,
-    Crag crag,
-  ) async {
-    final weatherProvider = context.read<WeatherProvider>();
-    final conditionProvider = context.read<ConditionProvider>();
-
-    try {
-      final weather = await weatherProvider.fetchWeather(
-        latitude: crag.latitude,
-        longitude: crag.longitude,
-      );
-      final condition = await conditionProvider.calculateCondition(
-        crag: crag,
-        weather: weather,
-      );
-      return condition;
-    } catch (e) {
-      return null;
-    }
   }
 }

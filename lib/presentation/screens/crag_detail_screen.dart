@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/weather_provider.dart';
-import '../providers/condition_provider.dart';
+import '../providers/crag_provider.dart';
 import '../widgets/condition_card.dart';
 import '../widgets/crag_route_stats_card.dart';
 import '../widgets/weather_info_card.dart';
@@ -23,6 +22,7 @@ class CragDetailScreen extends StatefulWidget {
 }
 
 class _CragDetailScreenState extends State<CragDetailScreen> {
+  late Crag _crag;
   Weather? _weather;
   Condition? _condition;
   bool _isLoading = false;
@@ -31,6 +31,7 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _crag = widget.crag;
     _loadData();
   }
 
@@ -41,25 +42,33 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
     });
 
     try {
-      final weatherProvider = context.read<WeatherProvider>();
-      final conditionProvider = context.read<ConditionProvider>();
+      final cragProvider = context.read<CragProvider>();
+      final data = await cragProvider.loadCragDetailFromBackend(widget.crag.id);
 
-      final weather = await weatherProvider.fetchWeather(
-        latitude: widget.crag.latitude,
-        longitude: widget.crag.longitude,
-      );
+      if (!mounted) return;
 
-      final condition = await conditionProvider.calculateCondition(
-        crag: widget.crag,
-        weather: weather,
-      );
+      if (data == null) {
+        debugPrint(
+          '[CragDetailScreen] loadCragDetailFromBackend returned null for '
+          'id=${widget.crag.id} — see [CragRepository] / [BackendApiClient] '
+          'lines in the Flutter run console or DevTools logging.',
+        );
+        setState(() {
+          _error = 'Failed to load crag detail (see debug console for [CragRepository] logs)';
+          _isLoading = false;
+        });
+        return;
+      }
 
       setState(() {
-        _weather = weather;
-        _condition = condition;
+        _crag = data.crag;
+        _weather = data.weather;
+        _condition = data.crag.backendDerivedCondition;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[CragDetailScreen] _loadData threw: $e\n$st');
+      if (!mounted) return;
       setState(() {
         _error = 'Failed to load data: $e';
         _isLoading = false;
@@ -71,7 +80,7 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.crag.name),
+        title: Text(_crag.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -99,7 +108,6 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Crag info
                       Card(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -107,7 +115,7 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.crag.name,
+                                _crag.name,
                                 style: Theme.of(context).textTheme.headlineSmall,
                               ),
                               const SizedBox(height: 8),
@@ -115,14 +123,14 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
                                 spacing: 8,
                                 children: [
                                   Chip(
-                                    label: Text(widget.crag.rockType.displayName),
+                                    label: Text(_crag.rockType.displayName),
                                     avatar: const Icon(Icons.landscape, size: 18),
                                   ),
                                   Chip(
-                                    label: Text(widget.crag.aspect.displayName),
+                                    label: Text(_crag.aspect.displayName),
                                     avatar: const Icon(Icons.explore, size: 18),
                                   ),
-                                  ...widget.crag.climbingTypes.map(
+                                  ..._crag.climbingTypes.map(
                                     (type) => Chip(
                                       label: Text(type.displayName),
                                       avatar: const Icon(Icons.arrow_upward, size: 18),
@@ -130,14 +138,14 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
                                   ),
                                 ],
                               ),
-                              if (widget.crag.description != null) ...[
+                              if (_crag.description != null) ...[
                                 const SizedBox(height: 8),
-                                Text(widget.crag.description!),
+                                Text(_crag.description!),
                               ],
-                              if (widget.crag.elevation != null) ...[
+                              if (_crag.elevation != null) ...[
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Elevation: ${widget.crag.elevation!.toStringAsFixed(0)} m',
+                                  'Elevation: ${_crag.elevation!.toStringAsFixed(0)} m',
                                   style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                               ],
@@ -146,16 +154,14 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      CragRouteStatsCard(stats: widget.crag.routeStats),
-                      if (widget.crag.routeStats?.hasAnyData ?? false)
+                      CragRouteStatsCard(stats: _crag.routeStats),
+                      if (_crag.routeStats?.hasAnyData ?? false)
                         const SizedBox(height: 16),
 
-                      // Condition card
                       if (_condition != null)
                         ConditionCard(condition: _condition!),
                       const SizedBox(height: 16),
 
-                      // Weather info
                       if (_weather != null) ...[
                         WeatherInfoCard(weather: _weather!),
                         const SizedBox(height: 16),

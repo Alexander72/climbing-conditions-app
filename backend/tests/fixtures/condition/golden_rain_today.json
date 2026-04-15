@@ -1,0 +1,31 @@
+{
+  "reference_now_utc": "2026-04-14T12:00:00+00:00",
+  "merged_weather": {
+    "current": {
+      "temp": 15.0,
+      "humidity": 60.0,
+      "wind_speed": 5.0,
+      "dt": 1776168000,
+      "rain": {}
+    },
+    "historical": [
+      {
+        "dt": 1776124800,
+        "temp": 12.0,
+        "rain": 4.5
+      }
+    ]
+  },
+  "expected": {
+    "conditionScore": 57,
+    "conditionRecommendation": "fair",
+    "conditionFactors": [
+      "Rain today - conditions poor",
+      "Temperature good (15.0°C)",
+      "Aspect unknown: Assuming moderate conditions",
+      "Limestone: Moderate sensitivity to moisture",
+      "Sport climbing: More forgiving conditions"
+    ],
+    "conditionLastUpdated": 1776168000
+  }
+}

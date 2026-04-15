@@ -6,6 +6,7 @@ from services.crag_service import (
     bboxes_overlap,
     coarse_grade_histogram_from_row,
     countries_overlapping_bbox,
+    find_crag_by_id,
     grade_histogram_from_route_counts,
     list_crags_in_bbox,
     route_stats_from_row,
@@ -80,3 +81,14 @@ def test_list_crags_corphalie_bbox_has_route_stats():
     assert c0.get("routeCount", 0) >= 1
     assert c0.get("gradeHistogram")
     assert isinstance(c0["gradeHistogram"], list)
+
+
+def test_find_crag_by_id_matches_param_id_slug():
+    found = find_crag_by_id("be:corphalie-huy")
+    assert found is not None
+    assert found["id"] == "be:corphalie-huy"
+    assert found["country"] == "be"
+
+
+def test_find_crag_by_id_unknown_returns_none():
+    assert find_crag_by_id("be:no-such-crag-id-99999") is None
