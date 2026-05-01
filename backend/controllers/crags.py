@@ -37,6 +37,7 @@ class CragFullItem(CragItem):
     conditionRecommendation: str | None = None
     conditionFactors: list[str] = Field(default_factory=list)
     conditionLastUpdated: int | None = None
+    conditionForecast: list[dict[str, Any]] = Field(default_factory=list)
     weatherAsOf: str | None = None
 
 

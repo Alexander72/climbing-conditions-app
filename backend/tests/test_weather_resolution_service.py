@@ -48,6 +48,7 @@ def _forecast_payload() -> dict:
         "timezone_offset": 0,
         "current": {},
         "hourly": [],
+        "daily": [{"dt": 1714305600 + (86400 * idx)} for idx in range(20)],
     }
 
 
@@ -93,6 +94,7 @@ def test_all_cache_hits_zero_owm_http():
                 assert out["timezone"] == "UTC"
                 assert "historical" in out
                 assert len(out["historical"]) == 5
+                assert len(out["daily"]) == 14
 
     asyncio.run(_run())
 
@@ -136,6 +138,7 @@ def test_all_cache_misses_one_forecast_and_five_day_calls():
                 assert m_day.await_count == 5
                 assert "historical" in out
                 assert len(out["historical"]) == 5
+                assert len(out["daily"]) == 14
 
     asyncio.run(_run())
 

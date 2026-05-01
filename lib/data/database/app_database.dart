@@ -33,7 +33,7 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -82,6 +82,11 @@ class AppDatabase {
                   jsonDecode(map['conditionFactors'] as String) as List<dynamic>,
                 )
               : map['conditionFactors']),
+      'conditionForecast': map['conditionForecast'] == null
+          ? null
+          : (map['conditionForecast'] is String
+              ? jsonDecode(map['conditionForecast'] as String)
+              : map['conditionForecast']),
       'isSummaryOnly': _boolFromSqlColumn(map['isSummaryOnly']),
     };
   }
@@ -109,6 +114,9 @@ class AppDatabase {
       await db.execute('ALTER TABLE crags ADD COLUMN conditionFactors TEXT');
       await db.execute('ALTER TABLE crags ADD COLUMN conditionLastUpdated INTEGER');
       await db.execute('ALTER TABLE crags ADD COLUMN weatherAsOf TEXT');
+    }
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE crags ADD COLUMN conditionForecast TEXT');
     }
   }
 
@@ -138,6 +146,7 @@ class AppDatabase {
         conditionRecommendation TEXT,
         conditionFactors TEXT,
         conditionLastUpdated INTEGER,
+        conditionForecast TEXT,
         weatherAsOf TEXT
       )
     ''');

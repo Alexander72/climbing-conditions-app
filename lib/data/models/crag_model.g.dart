@@ -33,6 +33,7 @@ CragModel _$CragModelFromJson(Map<String, dynamic> json) => CragModel(
       ?.map((e) => e as String)
       .toList(),
   conditionLastUpdated: (json['conditionLastUpdated'] as num?)?.toInt(),
+  conditionForecast: _conditionForecastFromJson(json['conditionForecast']),
   weatherAsOf: json['weatherAsOf'] as String?,
 );
 
@@ -59,5 +60,6 @@ Map<String, dynamic> _$CragModelToJson(CragModel instance) => <String, dynamic>{
   'conditionRecommendation': instance.conditionRecommendation,
   'conditionFactors': instance.conditionFactors,
   'conditionLastUpdated': instance.conditionLastUpdated,
+  'conditionForecast': _conditionForecastToJson(instance.conditionForecast),
   'weatherAsOf': instance.weatherAsOf,
 };

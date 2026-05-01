@@ -9,11 +9,13 @@ import '../../domain/entities/crag.dart';
 class CragMarker extends StatelessWidget {
   final Crag crag;
   final bool isDetailed;
+  final DateTime? selectedDate;
 
   const CragMarker({
     super.key,
     required this.crag,
     required this.isDetailed,
+    this.selectedDate,
   });
 
   static Color _scoreColor(int score) {
@@ -36,7 +38,10 @@ class CragMarker extends StatelessWidget {
       );
     }
 
-    final score = crag.conditionScore;
+    final score = (selectedDate == null
+            ? crag.backendDerivedCondition
+            : crag.conditionForDate(selectedDate!))
+        ?.score;
     if (score == null) {
       return Container(
         width: 36,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Sequence
 
 from models.condition.constants import MAX_WIND_SPEED_MS, MIN_TEMPERATURE_C
@@ -183,11 +183,113 @@ def _recommendation_for_score(score: int) -> ConditionRecommendation:
     return ConditionRecommendation.dangerous
 
 
+def _to_utc_datetime(unix_ts: int) -> datetime:
+    return datetime.fromtimestamp(unix_ts, tz=timezone.utc)
+
+
+def _daily_entries(merged_weather: dict[str, Any]) -> list[dict[str, Any]]:
+    raw = merged_weather.get("daily")
+    if not isinstance(raw, list):
+        return []
+    return [item for item in raw if isinstance(item, dict) and item.get("dt") is not None]
+
+
+def _matching_daily_entry(merged_weather: dict[str, Any], target_date: date) -> dict[str, Any] | None:
+    for item in _daily_entries(merged_weather):
+        dt = _to_utc_datetime(int(item["dt"]))
+        if dt.date() == target_date:
+            return item
+    return None
+
+
+def _daily_temperature(item: dict[str, Any], fallback: float) -> float:
+    temp = item.get("temp")
+    if isinstance(temp, dict):
+        day = temp.get("day")
+        if day is not None:
+            return float(day)
+        tmin = temp.get("min")
+        tmax = temp.get("max")
+        if tmin is not None and tmax is not None:
+            return (float(tmin) + float(tmax)) / 2.0
+    if isinstance(temp, (int, float)):
+        return float(temp)
+    return fallback
+
+
+def _daily_precipitation(item: dict[str, Any], fallback: float | None) -> float | None:
+    if item.get("rain") is not None:
+        return float(item["rain"])
+    if item.get("snow") is not None:
+        return float(item["snow"])
+    if item.get("pop") is not None and float(item["pop"]) >= 0.6:
+        return 0.1
+    return fallback
+
+
+def _historical_with_forecast(
+    base_historical: list[HistoricalDay],
+    merged_weather: dict[str, Any],
+    target_now: datetime,
+) -> list[HistoricalDay]:
+    out = list(base_historical)
+    current = merged_weather.get("current")
+    if not isinstance(current, dict) or current.get("dt") is None:
+        return out
+    base_now = _to_utc_datetime(int(current["dt"]))
+    if target_now <= base_now:
+        return out
+
+    for item in _daily_entries(merged_weather):
+        entry_dt = _to_utc_datetime(int(item["dt"]))
+        if entry_dt <= base_now or entry_dt > target_now:
+            continue
+        out.append(
+            HistoricalDay(
+                instant=entry_dt,
+                temp=_daily_temperature(item, 0.0),
+                rain=_daily_precipitation(item, 0.0),
+            )
+        )
+    return out
+
+
+def _weather_for_target_date(
+    merged_weather: dict[str, Any],
+    weather: WeatherInputs,
+    target_now: datetime,
+) -> WeatherInputs:
+    daily = _matching_daily_entry(merged_weather, target_now.date())
+    if daily is None:
+        return WeatherInputs(
+            temperature=weather.temperature,
+            humidity=weather.humidity,
+            precipitation=weather.precipitation,
+            wind_speed=weather.wind_speed,
+            current_dt=int(target_now.timestamp()),
+            historical=_historical_with_forecast(weather.historical, merged_weather, target_now),
+            forecast=weather.forecast,
+        )
+
+    humidity = daily.get("humidity")
+    wind = daily.get("wind_speed")
+    return WeatherInputs(
+        temperature=_daily_temperature(daily, weather.temperature),
+        humidity=float(humidity) if humidity is not None else weather.humidity,
+        precipitation=_daily_precipitation(daily, weather.precipitation),
+        wind_speed=float(wind) if wind is not None else weather.wind_speed,
+        current_dt=int(target_now.timestamp()),
+        historical=_historical_with_forecast(weather.historical, merged_weather, target_now),
+        forecast=weather.forecast,
+    )
+
+
 def calculate_condition(
     merged_weather: dict[str, Any],
     crag: CragConditionInputs | None = None,
     *,
     reference_now: datetime | None = None,
+    target_now: datetime | None = None,
 ) -> ConditionResult:
     """
     Compute condition score from merged forecast JSON.
@@ -195,8 +297,9 @@ def calculate_condition(
     ``reference_now`` defaults to current UTC; set in tests for deterministic output.
     """
     c = crag or CragConditionInputs()
-    now = reference_now if reference_now is not None else datetime.now(timezone.utc)
-    weather = weather_inputs_from_merged(merged_weather)
+    now = target_now or reference_now or datetime.now(timezone.utc)
+    weather_base = weather_inputs_from_merged(merged_weather)
+    weather = _weather_for_target_date(merged_weather, weather_base, now)
     factors: list[str] = []
 
     score = 100
@@ -229,6 +332,48 @@ def calculate_condition(
     )
 
 
+def calculate_condition_forecast(
+    merged_weather: dict[str, Any],
+    crag: CragConditionInputs | None = None,
+    *,
+    days: int = 14,
+) -> list[dict[str, Any]]:
+    c = crag or CragConditionInputs()
+    current = merged_weather.get("current")
+    if not isinstance(current, dict) or current.get("dt") is None:
+        return []
+
+    base_now = _to_utc_datetime(int(current["dt"]))
+    out: list[dict[str, Any]] = []
+    candidates = [(base_now + timedelta(days=offset)).date() for offset in range(days)]
+
+    for d in candidates:
+        target = datetime(
+            year=d.year,
+            month=d.month,
+            day=d.day,
+            hour=12,
+            minute=0,
+            second=0,
+            tzinfo=timezone.utc,
+        )
+        result = calculate_condition(
+            merged_weather,
+            c,
+            target_now=target,
+        )
+        out.append(
+            {
+                "date": d.isoformat(),
+                "score": result.score,
+                "recommendation": result.recommendation,
+                "factors": result.factors,
+                "lastUpdated": result.last_updated_unix,
+            }
+        )
+    return out
+
+
 def condition_from_merged_with_defaults(
     merged_weather: dict[str, Any],
     *,
@@ -244,6 +389,7 @@ def condition_from_merged_with_defaults(
 
 __all__ = [
     "calculate_condition",
+    "calculate_condition_forecast",
     "condition_from_merged_with_defaults",
     "weather_inputs_from_merged",
 ]

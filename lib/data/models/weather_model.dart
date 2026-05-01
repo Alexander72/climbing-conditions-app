@@ -26,7 +26,10 @@ class WeatherModel {
       humidity: current.humidity,
       precipitation: current.precipitation,
       windSpeed: current.windSpeed,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(current.timestamp * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        current.timestamp * 1000,
+        isUtc: true,
+      ),
       historical: historical.map((h) => h.toEntity()).toList(),
       forecast: forecast.map((f) => f.toEntity()).toList(),
     );
@@ -78,7 +81,7 @@ class HistoricalWeatherModel {
 
   HistoricalWeather toEntity() {
     return HistoricalWeather(
-      date: DateTime.fromMillisecondsSinceEpoch(dt * 1000),
+      date: DateTime.fromMillisecondsSinceEpoch(dt * 1000, isUtc: true),
       precipitation: rain,
       temperature: temp,
     );
@@ -106,7 +109,7 @@ class ForecastWeatherModel {
 
   ForecastWeather toEntity() {
     return ForecastWeather(
-      date: DateTime.fromMillisecondsSinceEpoch(dt * 1000),
+      date: DateTime.fromMillisecondsSinceEpoch(dt * 1000, isUtc: true),
       precipitation: rain,
       temperature: temp,
       windSpeed: windSpeed,

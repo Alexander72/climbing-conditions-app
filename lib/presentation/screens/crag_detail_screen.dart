@@ -27,11 +27,13 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
   Condition? _condition;
   bool _isLoading = false;
   String? _error;
+  DateTime _selectedDate = DateTime.now().toUtc();
 
   @override
   void initState() {
     super.initState();
     _crag = widget.crag;
+    _selectedDate = context.read<CragProvider>().selectedConditionDate;
     _loadData();
   }
 
@@ -63,7 +65,7 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
       setState(() {
         _crag = data.crag;
         _weather = data.weather;
-        _condition = data.crag.backendDerivedCondition;
+        _condition = data.crag.conditionForDate(_selectedDate);
         _isLoading = false;
       });
     } catch (e, st) {
@@ -159,7 +161,13 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
                         const SizedBox(height: 16),
 
                       if (_condition != null)
-                        ConditionCard(condition: _condition!),
+                        Column(
+                          children: [
+                            _buildDateSelector(),
+                            const SizedBox(height: 8),
+                            ConditionCard(condition: _condition!),
+                          ],
+                        ),
                       const SizedBox(height: 16),
 
                       if (_weather != null) ...[
@@ -172,6 +180,48 @@ class _CragDetailScreenState extends State<CragDetailScreen> {
                     ],
                   ),
                 ),
+    );
+  }
+
+  Widget _buildDateSelector() {
+    final provider = context.read<CragProvider>();
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year, now.month, now.day);
+    final lastDate = firstDate.add(const Duration(days: 13));
+    final selectedLocal = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        icon: const Icon(Icons.calendar_today),
+        label: Text(
+          'Conditions date: ${selectedLocal.day}/${selectedLocal.month}/${selectedLocal.year}',
+        ),
+        onPressed: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: selectedLocal,
+            firstDate: firstDate,
+            lastDate: lastDate,
+          );
+          if (picked != null && context.mounted) {
+            final selectedUtc = DateTime.utc(
+              picked.year,
+              picked.month,
+              picked.day,
+            );
+            provider.setSelectedConditionDate(selectedUtc);
+            setState(() {
+              _selectedDate = provider.selectedConditionDate;
+              _condition = _crag.conditionForDate(_selectedDate);
+            });
+          }
+        },
+      ),
     );
   }
 }

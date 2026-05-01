@@ -10,6 +10,75 @@ import '../../domain/entities/crag_route_stats.dart';
 
 part 'crag_model.g.dart';
 
+class ConditionForecastEntryModel {
+  final String date;
+  final int score;
+  final String recommendation;
+  final List<String> factors;
+  final int lastUpdated;
+
+  const ConditionForecastEntryModel({
+    required this.date,
+    required this.score,
+    required this.recommendation,
+    required this.factors,
+    required this.lastUpdated,
+  });
+
+  factory ConditionForecastEntryModel.fromJson(Map<String, dynamic> json) =>
+      ConditionForecastEntryModel(
+        date: json['date'] as String,
+        score: (json['score'] as num).toInt(),
+        recommendation: json['recommendation'] as String,
+        factors: (json['factors'] as List<dynamic>? ?? const [])
+            .map((e) => e.toString())
+            .toList(),
+        lastUpdated: (json['lastUpdated'] as num).toInt(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'date': date,
+        'score': score,
+        'recommendation': recommendation,
+        'factors': factors,
+        'lastUpdated': lastUpdated,
+      };
+}
+
+DateTime _parseIsoDateToUtcDay(String raw) {
+  final parts = raw.split('-');
+  if (parts.length == 3) {
+    final y = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    final d = int.tryParse(parts[2]);
+    if (y != null && m != null && d != null) {
+      return DateTime.utc(y, m, d);
+    }
+  }
+  final parsed = DateTime.parse(raw);
+  return DateTime.utc(parsed.year, parsed.month, parsed.day);
+}
+
+List<ConditionForecastEntryModel>? _conditionForecastFromJson(dynamic json) {
+  if (json == null) return null;
+  dynamic raw = json;
+  if (raw is String) {
+    if (raw.isEmpty) return null;
+    raw = jsonDecode(raw);
+  }
+  if (raw is! List<dynamic>) return null;
+  return raw
+      .whereType<Map>()
+      .map(
+        (e) =>
+            ConditionForecastEntryModel.fromJson(Map<String, dynamic>.from(e)),
+      )
+      .toList();
+}
+
+Object? _conditionForecastToJson(List<ConditionForecastEntryModel>? v) =>
+    v?.map((e) => e.toJson()).toList();
+
 class GradeHistogramBinModel {
   final String grade;
   final int count;
@@ -85,6 +154,12 @@ class CragModel {
   final List<String>? conditionFactors;
   @JsonKey(name: 'conditionLastUpdated')
   final int? conditionLastUpdated;
+  @JsonKey(
+    name: 'conditionForecast',
+    fromJson: _conditionForecastFromJson,
+    toJson: _conditionForecastToJson,
+  )
+  final List<ConditionForecastEntryModel>? conditionForecast;
   @JsonKey(name: 'weatherAsOf')
   final String? weatherAsOf;
 
@@ -111,6 +186,7 @@ class CragModel {
     this.conditionRecommendation,
     this.conditionFactors,
     this.conditionLastUpdated,
+    this.conditionForecast,
     this.weatherAsOf,
   });
 
@@ -150,6 +226,17 @@ class CragModel {
       conditionRecommendation: crag.conditionRecommendation,
       conditionFactors: crag.conditionFactors,
       conditionLastUpdated: crag.conditionLastUpdated,
+      conditionForecast: crag.conditionForecast
+          .map(
+            (entry) => ConditionForecastEntryModel(
+              date: entry.date.toIso8601String(),
+              score: entry.score,
+              recommendation: entry.recommendation,
+              factors: entry.factors,
+              lastUpdated: entry.lastUpdated.millisecondsSinceEpoch ~/ 1000,
+            ),
+          )
+          .toList(),
       weatherAsOf: crag.weatherAsOf,
     );
   }
@@ -187,6 +274,18 @@ class CragModel {
       conditionRecommendation: conditionRecommendation,
       conditionFactors: conditionFactors,
       conditionLastUpdated: conditionLastUpdated,
+      conditionForecast: (conditionForecast ?? const [])
+          .map(
+            (entry) => ConditionForecastEntry(
+              date: _parseIsoDateToUtcDay(entry.date),
+              score: entry.score,
+              recommendation: entry.recommendation,
+              factors: entry.factors,
+              lastUpdated:
+                  DateTime.fromMillisecondsSinceEpoch(entry.lastUpdated * 1000, isUtc: true),
+            ),
+          )
+          .toList(),
       weatherAsOf: weatherAsOf,
     );
   }

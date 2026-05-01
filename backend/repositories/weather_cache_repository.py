@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import time
+import logging
 from datetime import date, timedelta
 from typing import Any
 
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
+from botocore.exceptions import ClientError
 
 from services.weather_service import _midnight_unix_for_local_date
 
 FORECAST_SK = "FORECAST#metric"
+FORECAST_TTL_SECONDS = 3600
+DAY_SUMMARY_TTL_DAYS = 7
+logger = logging.getLogger(__name__)
 
 
 def cell_partition_key(cell_id: str) -> str:
@@ -49,25 +54,46 @@ class WeatherCacheRepository:
             return dict(raw)
         return {k: self._deser.deserialize(v) for k, v in raw.items()}
 
+    @staticmethod
+    def _is_missing_table_error(exc: ClientError) -> bool:
+        code = exc.response.get("Error", {}).get("Code")
+        return code == "ResourceNotFoundException"
+
     def get_forecast(self, cell_id: str) -> dict[str, Any] | None:
-        resp = self._table.get_item(
-            Key={"pk": cell_partition_key(cell_id), "sk": FORECAST_SK},
-        )
-        return resp.get("Item")
+        try:
+            resp = self._table.get_item(
+                Key={"pk": cell_partition_key(cell_id), "sk": FORECAST_SK},
+            )
+            return resp.get("Item")
+        except ClientError as exc:
+            if self._is_missing_table_error(exc):
+                logger.warning(
+                    "Weather cache table missing; continuing without cache in get_forecast"
+                )
+                return None
+            raise
 
     def put_forecast(
         self, cell_id: str, payload_json: str, fetched_at: str
     ) -> None:
-        ttl = int(time.time()) + 3600
-        self._table.put_item(
-            Item={
-                "pk": cell_partition_key(cell_id),
-                "sk": FORECAST_SK,
-                "payload": payload_json,
-                "fetched_at": fetched_at,
-                "ttl": ttl,
-            },
-        )
+        ttl = int(time.time()) + FORECAST_TTL_SECONDS
+        try:
+            self._table.put_item(
+                Item={
+                    "pk": cell_partition_key(cell_id),
+                    "sk": FORECAST_SK,
+                    "payload": payload_json,
+                    "fetched_at": fetched_at,
+                    "ttl": ttl,
+                },
+            )
+        except ClientError as exc:
+            if self._is_missing_table_error(exc):
+                logger.warning(
+                    "Weather cache table missing; skipping put_forecast write"
+                )
+                return
+            raise
 
     def put_day_summary(
         self,
@@ -79,23 +105,39 @@ class WeatherCacheRepository:
         timezone_offset: int,
     ) -> None:
         ttl = _midnight_unix_for_local_date(
-            d + timedelta(days=7), timezone_name, timezone_offset
+            d + timedelta(days=DAY_SUMMARY_TTL_DAYS), timezone_name, timezone_offset
         )
-        self._table.put_item(
-            Item={
-                "pk": cell_partition_key(cell_id),
-                "sk": day_sort_key(d),
-                "payload": payload_json,
-                "written_at": written_at,
-                "ttl": ttl,
-            },
-        )
+        try:
+            self._table.put_item(
+                Item={
+                    "pk": cell_partition_key(cell_id),
+                    "sk": day_sort_key(d),
+                    "payload": payload_json,
+                    "written_at": written_at,
+                    "ttl": ttl,
+                },
+            )
+        except ClientError as exc:
+            if self._is_missing_table_error(exc):
+                logger.warning(
+                    "Weather cache table missing; skipping put_day_summary write"
+                )
+                return
+            raise
 
     def get_day(self, cell_id: str, d: date) -> dict[str, Any] | None:
-        resp = self._table.get_item(
-            Key={"pk": cell_partition_key(cell_id), "sk": day_sort_key(d)},
-        )
-        return resp.get("Item")
+        try:
+            resp = self._table.get_item(
+                Key={"pk": cell_partition_key(cell_id), "sk": day_sort_key(d)},
+            )
+            return resp.get("Item")
+        except ClientError as exc:
+            if self._is_missing_table_error(exc):
+                logger.warning(
+                    "Weather cache table missing; continuing without cache in get_day"
+                )
+                return None
+            raise
 
     def batch_get_day_items(
         self, cell_id: str, local_dates: list[date]
@@ -110,11 +152,19 @@ class WeatherCacheRepository:
         while pending:
             chunk = pending[:100]
             pending = pending[100:]
-            resp = self._client.batch_get_item(
-                RequestItems={
-                    self._table_name: {"Keys": chunk},
-                },
-            )
+            try:
+                resp = self._client.batch_get_item(
+                    RequestItems={
+                        self._table_name: {"Keys": chunk},
+                    },
+                )
+            except ClientError as exc:
+                if self._is_missing_table_error(exc):
+                    logger.warning(
+                        "Weather cache table missing; continuing without cache in batch_get_day_items"
+                    )
+                    return {d: None for d in local_dates}
+                raise
             for raw in resp.get("Responses", {}).get(self._table_name, []):
                 item = self._item_from_low_level(raw)
                 sk = item["sk"]
@@ -137,9 +187,17 @@ class WeatherCacheRepository:
         while pending:
             chunk = pending[:100]
             pending = pending[100:]
-            resp = self._client.batch_get_item(
-                RequestItems={self._table_name: {"Keys": chunk}},
-            )
+            try:
+                resp = self._client.batch_get_item(
+                    RequestItems={self._table_name: {"Keys": chunk}},
+                )
+            except ClientError as exc:
+                if self._is_missing_table_error(exc):
+                    logger.warning(
+                        "Weather cache table missing; continuing without cache in batch_get_items"
+                    )
+                    return []
+                raise
             for raw in resp.get("Responses", {}).get(self._table_name, []):
                 out.append(self._item_from_low_level(raw))
             unproc = resp.get("UnprocessedKeys", {}).get(self._table_name, {})

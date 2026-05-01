@@ -42,6 +42,7 @@ class _CragListScreenState extends State<CragListScreen> {
         var crags = cragProvider.visibleCrags;
         final isDetailed = cragProvider.isDetailedZoom;
         final zoom = cragProvider.currentZoom;
+        final selectedDate = cragProvider.selectedConditionDate;
 
         if (_selectedRockType != null) {
           crags = crags
@@ -65,6 +66,7 @@ class _CragListScreenState extends State<CragListScreen> {
                 cragProvider.viewportWeatherPartial,
               ),
               _buildFilters(context),
+              _buildDateSelector(context, selectedDate, cragProvider),
               Expanded(
                 child: crags.isEmpty
                     ? _buildEmptyState(context, zoom)
@@ -89,7 +91,7 @@ class _CragListScreenState extends State<CragListScreen> {
                                 )
                               : CragCard(
                                   crag: crag,
-                                  condition: crag.backendDerivedCondition,
+                                  condition: crag.conditionForDate(selectedDate),
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -252,6 +254,47 @@ class _CragListScreenState extends State<CragListScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDateSelector(
+    BuildContext context,
+    DateTime selectedDate,
+    CragProvider provider,
+  ) {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year, now.month, now.day);
+    final lastDate = firstDate.add(const Duration(days: 13));
+    final selectedLocal = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          icon: const Icon(Icons.calendar_today),
+          label: Text(
+            'Conditions date: ${selectedLocal.day}/${selectedLocal.month}/${selectedLocal.year}',
+          ),
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: selectedLocal,
+              firstDate: firstDate,
+              lastDate: lastDate,
+            );
+            if (picked != null && context.mounted) {
+              provider.setSelectedConditionDate(
+                DateTime.utc(picked.year, picked.month, picked.day),
+              );
+            }
+          },
+        ),
       ),
     );
   }

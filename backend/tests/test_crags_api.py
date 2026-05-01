@@ -60,6 +60,15 @@ async def _fake_enrich(
         row["conditionRecommendation"] = "excellent"
         row["conditionFactors"] = ["No historical weather data available"]
         row["conditionLastUpdated"] = 1700000000
+        row["conditionForecast"] = [
+            {
+                "date": "2026-01-01",
+                "score": 85,
+                "recommendation": "excellent",
+                "factors": ["No historical weather data available"],
+                "lastUpdated": 1700000000,
+            }
+        ]
         row["weatherAsOf"] = "2026-01-01T12:00:00Z"
         out.append(row)
     return out, wcells, False
@@ -92,6 +101,15 @@ def test_get_crag_by_id_known_returns_200_and_weather_partial_false(client: Test
                     "conditionRecommendation": "excellent",
                     "conditionFactors": [],
                     "conditionLastUpdated": 1,
+                    "conditionForecast": [
+                        {
+                            "date": "2026-01-01",
+                            "score": 85,
+                            "recommendation": "excellent",
+                            "factors": [],
+                            "lastUpdated": 1,
+                        }
+                    ],
                     "weatherAsOf": "2026-01-01T00:00:00Z",
                 },
                 {"u09wv": merged},
@@ -105,6 +123,7 @@ def test_get_crag_by_id_known_returns_200_and_weather_partial_false(client: Test
     assert data["crag"]["id"] == "be:corphalie-huy"
     assert "weatherCells" in data
     assert data["crag"]["conditionScore"] == 85
+    assert len(data["crag"]["conditionForecast"]) == 1
 
 
 def test_get_crag_by_id_unknown_returns_404(client: TestClient) -> None:
@@ -136,5 +155,6 @@ def test_get_crags_full_has_weather_and_conditions(client: TestClient) -> None:
     c0 = data["crags"][0]
     assert c0["conditionScore"] == 85
     assert c0["conditionRecommendation"] == "excellent"
+    assert len(c0["conditionForecast"]) == 1
     assert "weatherCellId" in c0
     assert c0["weatherCellId"] in data["weatherCells"]

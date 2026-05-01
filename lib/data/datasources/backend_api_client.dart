@@ -54,17 +54,60 @@ WeatherModel parseMergedWeatherJson(Map<String, dynamic> json) {
   }
 
   final forecast = <ForecastWeatherModel>[];
-  if (json['hourly'] != null) {
+  if (json['daily'] is List) {
+    final daily = json['daily'] as List<dynamic>;
+    final byDay = <DateTime, ForecastWeatherModel>{};
+    for (final item in daily.take(14)) {
+      final itemMap = item as Map<String, dynamic>;
+      final dt = DateTime.fromMillisecondsSinceEpoch(
+        (itemMap['dt'] as int) * 1000,
+        isUtc: true,
+      );
+      final dayKey = DateTime.utc(dt.year, dt.month, dt.day);
+      final temp = itemMap['temp'];
+      final tempValue = temp is Map<String, dynamic>
+          ? ((temp['day'] ?? temp['max'] ?? temp['min']) as num?)?.toDouble()
+          : (temp as num?)?.toDouble();
+      if (tempValue == null) continue;
+      byDay[dayKey] = ForecastWeatherModel(
+        dt: itemMap['dt'] as int,
+        temp: tempValue,
+        rain: (itemMap['rain'] as num?)?.toDouble(),
+        windSpeed: (itemMap['wind_speed'] as num?)?.toDouble() ?? 0,
+      );
+    }
+
+    final nowUtc = DateTime.now().toUtc();
+    final startDay = DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
+    for (var offset = 0; offset < 14; offset++) {
+      final day = DateTime.utc(
+        startDay.year,
+        startDay.month,
+        startDay.day + offset,
+      );
+      final existing = byDay[day];
+      if (existing != null) {
+        forecast.add(existing);
+      } else {
+        forecast.add(ForecastWeatherModel(
+          dt: day.millisecondsSinceEpoch ~/ 1000,
+          temp: 0,
+          rain: null,
+          windSpeed: 0,
+        ));
+      }
+    }
+  } else if (json['hourly'] != null) {
     final hourly = json['hourly'] as List<dynamic>;
     final now = DateTime.now();
-    final twoDaysLater = now.add(const Duration(days: 2));
+    final fourteenDaysLater = now.add(const Duration(days: 14));
 
     for (final item in hourly) {
       final itemMap = item as Map<String, dynamic>;
       final dt = DateTime.fromMillisecondsSinceEpoch(
         (itemMap['dt'] as int) * 1000,
       );
-      if (dt.isAfter(now) && dt.isBefore(twoDaysLater)) {
+      if (dt.isAfter(now) && dt.isBefore(fourteenDaysLater)) {
         forecast.add(ForecastWeatherModel(
           dt: itemMap['dt'] as int,
           temp: (itemMap['temp'] as num).toDouble(),
@@ -118,6 +161,18 @@ CragModel _cragModelFromBackendCatalogMap(
 
   final idRaw = m['id'];
   final id = idRaw == null ? 'unknown' : idRaw.toString();
+  List<ConditionForecastEntryModel>? conditionForecast;
+  final cfRaw = m['conditionForecast'];
+  if (cfRaw is List<dynamic>) {
+    conditionForecast = cfRaw
+        .whereType<Map>()
+        .map(
+          (e) => ConditionForecastEntryModel.fromJson(
+            Map<String, dynamic>.from(e),
+          ),
+        )
+        .toList();
+  }
 
   return CragModel(
     id: id,
@@ -142,6 +197,7 @@ CragModel _cragModelFromBackendCatalogMap(
     conditionRecommendation: m['conditionRecommendation'] as String?,
     conditionFactors: factors,
     conditionLastUpdated: (m['conditionLastUpdated'] as num?)?.toInt(),
+    conditionForecast: conditionForecast,
     weatherAsOf: m['weatherAsOf'] as String?,
   );
 }

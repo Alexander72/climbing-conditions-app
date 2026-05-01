@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from repositories.weather_cache_repository import WeatherCacheRepository
-from services.condition_service import condition_from_merged_with_defaults
+from services.condition_service import calculate_condition_forecast, condition_from_merged_with_defaults
 from services.weather_cell import cell_id_from_lat_lon
 from services.weather_resolution_service import default_weather_cache_repository, resolve_cell
 from services.weather_service import WeatherServiceError
@@ -66,14 +66,17 @@ async def enrich_crags_with_weather(
             out["conditionRecommendation"] = None
             out["conditionFactors"] = []
             out["conditionLastUpdated"] = None
+            out["conditionForecast"] = []
             out["weatherAsOf"] = None
         else:
             merged = weather_cells[cell_id]
             cond = condition_from_merged_with_defaults(merged)
+            forecast = calculate_condition_forecast(merged)
             out["conditionScore"] = cond.score
             out["conditionRecommendation"] = cond.recommendation
             out["conditionFactors"] = cond.factors
             out["conditionLastUpdated"] = cond.last_updated_unix
+            out["conditionForecast"] = forecast
             out["weatherAsOf"] = fetched_at_by_cell.get(cell_id)
         enriched.append(out)
 
@@ -108,6 +111,7 @@ async def enrich_crag_detail(
         out["conditionRecommendation"] = cond.recommendation
         out["conditionFactors"] = cond.factors
         out["conditionLastUpdated"] = cond.last_updated_unix
+        out["conditionForecast"] = calculate_condition_forecast(merged)
         out["weatherAsOf"] = fetched_at
     except WeatherServiceError as exc:
         logger.warning("Weather resolution failed for detail cell_id=%s: %s", cell_id, exc)
@@ -115,6 +119,7 @@ async def enrich_crag_detail(
         out["conditionRecommendation"] = None
         out["conditionFactors"] = []
         out["conditionLastUpdated"] = None
+        out["conditionForecast"] = []
         out["weatherAsOf"] = None
 
     return out, weather_cells

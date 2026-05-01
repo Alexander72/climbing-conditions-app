@@ -25,6 +25,7 @@ class CragProvider with ChangeNotifier {
 
   /// Last `weatherPartial` from a detailed bbox fetch (API cell cap).
   bool _viewportWeatherPartial = false;
+  DateTime _selectedConditionDate = _todayUtc();
 
   CragProvider({CragRepository? repository})
       : _repository = repository ?? CragRepository();
@@ -41,6 +42,23 @@ class CragProvider with ChangeNotifier {
   double get currentZoom => _currentZoom;
 
   bool get viewportWeatherPartial => _viewportWeatherPartial;
+  DateTime get selectedConditionDate => _selectedConditionDate;
+
+  static DateTime _todayUtc() {
+    final now = DateTime.now().toUtc();
+    return DateTime.utc(now.year, now.month, now.day);
+  }
+
+  static DateTime _maxSelectableUtc() => _todayUtc().add(const Duration(days: 13));
+
+  DateTime clampConditionDate(DateTime date) {
+    final normalized = DateTime.utc(date.year, date.month, date.day);
+    final minDate = _todayUtc();
+    final maxDate = _maxSelectableUtc();
+    if (normalized.isBefore(minDate)) return minDate;
+    if (normalized.isAfter(maxDate)) return maxDate;
+    return normalized;
+  }
 
   /// Crags filtered to the current viewport.
   /// - zoom < 7  → empty list (nothing shown)
@@ -184,6 +202,13 @@ class CragProvider with ChangeNotifier {
   /// Loads one crag from `GET /api/crags/{id}` and persists; returns merged weather when present.
   Future<({Crag crag, Weather? weather})?> loadCragDetailFromBackend(String id) {
     return _repository.fetchCragDetailFromBackend(id);
+  }
+
+  void setSelectedConditionDate(DateTime date) {
+    final normalized = clampConditionDate(date);
+    if (_selectedConditionDate == normalized) return;
+    _selectedConditionDate = normalized;
+    notifyListeners();
   }
 
   @override

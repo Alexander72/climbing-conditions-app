@@ -30,6 +30,8 @@ from services.weather_service import (
 logger = logging.getLogger(__name__)
 
 _owm_concurrency = asyncio.Semaphore(4)
+_HISTORICAL_DAYS = 5
+_FORECAST_DAYS = 14
 
 
 def _utc_now_iso_z() -> str:
@@ -103,7 +105,7 @@ async def resolve_cell(
     repository: WeatherCacheRepository | None = None,
 ) -> dict[str, Any]:
     """
-    Load or fetch One Call + up to five ``day_summary`` payloads for ``cell_id`` (§4.1).
+    Load or fetch One Call + historical ``day_summary`` payloads for ``cell_id`` (§4.1).
 
     Optional ``api_key`` / ``base_url`` override env (used by ``get_weather_forecast``).
     Optional ``repository`` is for tests.
@@ -171,7 +173,7 @@ async def resolve_cell(
                 tz_name = None
             tz_offset = int(forecast_dict.get("timezone_offset") or 0)
 
-            dates = _calendar_dates_oldest_first(tz_name, tz_offset, 5)
+            dates = _calendar_dates_oldest_first(tz_name, tz_offset, _HISTORICAL_DAYS)
             today_local = dates[-1]
             summary_url = day_summary_url(resolved_base)
             day_rows = repo.batch_get_day_items(cell_id, dates)
@@ -224,6 +226,9 @@ async def resolve_cell(
                 dates, summary_by_date, tz_name, tz_offset
             )
             out = dict(forecast_dict)
+            daily = out.get("daily")
+            if isinstance(daily, list):
+                out["daily"] = daily[:_FORECAST_DAYS]
             if historical:
                 out["historical"] = historical
             logger.info("Resolved weather cell_id=%s", cell_id)

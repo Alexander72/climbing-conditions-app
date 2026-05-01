@@ -6,6 +6,22 @@ import 'climbing_type.dart';
 import 'crag_source.dart';
 import 'crag_route_stats.dart';
 
+class ConditionForecastEntry {
+  final DateTime date;
+  final int score;
+  final String recommendation;
+  final List<String> factors;
+  final DateTime lastUpdated;
+
+  const ConditionForecastEntry({
+    required this.date,
+    required this.score,
+    required this.recommendation,
+    required this.factors,
+    required this.lastUpdated,
+  });
+}
+
 class Crag {
   final String id;
   final String name;
@@ -26,6 +42,7 @@ class Crag {
   final String? conditionRecommendation;
   final List<String>? conditionFactors;
   final int? conditionLastUpdated;
+  final List<ConditionForecastEntry> conditionForecast;
   final String? weatherAsOf;
 
   const Crag({
@@ -46,6 +63,7 @@ class Crag {
     this.conditionRecommendation,
     this.conditionFactors,
     this.conditionLastUpdated,
+    this.conditionForecast = const [],
     this.weatherAsOf,
   });
 
@@ -65,5 +83,25 @@ class Crag {
       factors: conditionFactors ?? const [],
       lastUpdated: DateTime.fromMillisecondsSinceEpoch(ts * 1000, isUtc: true),
     );
+  }
+
+  Condition? conditionForDate(DateTime date) {
+    final normalized = DateTime.utc(date.year, date.month, date.day);
+    for (final item in conditionForecast) {
+      final itemDate = DateTime.utc(item.date.year, item.date.month, item.date.day);
+      if (itemDate == normalized) {
+        final rec = ConditionRecommendation.values.firstWhere(
+          (e) => e.name == item.recommendation,
+          orElse: () => ConditionRecommendation.fair,
+        );
+        return Condition(
+          score: item.score,
+          recommendation: rec,
+          factors: item.factors,
+          lastUpdated: item.lastUpdated,
+        );
+      }
+    }
+    return backendDerivedCondition;
   }
 }

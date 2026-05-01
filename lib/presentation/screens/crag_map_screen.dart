@@ -25,6 +25,7 @@ class _CragMapScreenState extends State<CragMapScreen> {
         final crags = cragProvider.visibleCrags;
         final isDetailed = cragProvider.isDetailedZoom;
         final markerSize = isDetailed ? 40.0 : 20.0;
+        final selectedDate = cragProvider.selectedConditionDate;
 
         return Stack(
           children: [
@@ -99,6 +100,7 @@ class _CragMapScreenState extends State<CragMapScreen> {
                         child: CragMarker(
                           crag: crag,
                           isDetailed: isDetailed,
+                          selectedDate: selectedDate,
                         ),
                       ),
                     );
@@ -137,6 +139,72 @@ class _CragMapScreenState extends State<CragMapScreen> {
                   ),
                 ),
               ),
+            Positioned(
+              left: 12,
+              right: 12,
+              top: 12,
+              child: Builder(
+                builder: (context) {
+                  final now = DateTime.now();
+                  final firstDate = DateTime(now.year, now.month, now.day);
+                  final lastDate = firstDate.add(const Duration(days: 13));
+                  final selectedLocal = DateTime(
+                    selectedDate.year,
+                    selectedDate.month,
+                    selectedDate.day,
+                  );
+
+                  return OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                    ),
+                    icon: const Icon(Icons.calendar_today),
+                    label: Text(
+                      '${selectedLocal.day}/${selectedLocal.month}/${selectedLocal.year}',
+                    ),
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedLocal,
+                        firstDate: firstDate,
+                        lastDate: lastDate,
+                      );
+                      if (picked != null && context.mounted) {
+                        cragProvider.setSelectedConditionDate(
+                          DateTime.utc(picked.year, picked.month, picked.day),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              left: 12,
+              right: 12,
+              top: 62,
+              child: IgnorePointer(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.92),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      child: Text(
+                        'Available dates: next 14 days',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         );
       },

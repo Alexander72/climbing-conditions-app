@@ -10,7 +10,7 @@ import pytest
 
 from models.condition.dto import CragConditionInputs
 from models.condition.enums import Aspect, ClimbingType, RockType
-from services.condition_service import calculate_condition
+from services.condition_service import calculate_condition, calculate_condition_forecast
 
 _FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "condition"
 
@@ -59,3 +59,60 @@ def test_condition_golden_fixtures(fixture_name: str) -> None:
     assert result.recommendation == exp["conditionRecommendation"]
     assert result.factors == exp["conditionFactors"]
     assert result.last_updated_unix == exp["conditionLastUpdated"]
+
+
+def test_condition_forecast_returns_up_to_14_days() -> None:
+    merged = {
+        "current": {
+            "dt": 1714305600,
+            "temp": 18.0,
+            "humidity": 50,
+            "wind_speed": 2.0,
+            "rain": {},
+        },
+        "historical": [],
+        "daily": [
+            {
+                "dt": 1714305600 + (86400 * idx),
+                "temp": {"day": 18 + idx},
+                "humidity": 50,
+                "wind_speed": 2.0,
+                "rain": 0.0,
+            }
+            for idx in range(16)
+        ],
+    }
+
+    out = calculate_condition_forecast(merged)
+    assert len(out) == 14
+    assert out[0]["date"] == "2024-04-28"
+    assert out[-1]["date"] == "2024-05-11"
+    assert all("score" in row and "recommendation" in row for row in out)
+
+
+def test_condition_forecast_pads_to_14_when_daily_is_short() -> None:
+    merged = {
+        "current": {
+            "dt": 1714305600,
+            "temp": 18.0,
+            "humidity": 50,
+            "wind_speed": 2.0,
+            "rain": {},
+        },
+        "historical": [],
+        "daily": [
+            {
+                "dt": 1714305600 + (86400 * idx),
+                "temp": {"day": 18 + idx},
+                "humidity": 50,
+                "wind_speed": 2.0,
+                "rain": 2.0 if idx < 7 else 0.0,
+            }
+            for idx in range(8)
+        ],
+    }
+
+    out = calculate_condition_forecast(merged)
+    assert len(out) == 14
+    # Day 8 should still be influenced by rain in recent forecast days.
+    assert "No precipitation in the last 5 days" not in out[8]["factors"]
