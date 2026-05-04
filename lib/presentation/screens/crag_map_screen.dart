@@ -37,6 +37,11 @@ class _CragMapScreenState extends State<CragMapScreen> {
                   AppConfig.defaultMapLongitude,
                 ),
                 initialZoom: AppConfig.defaultMapZoom,
+                interactionOptions: InteractionOptions(
+                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                  cursorKeyboardRotationOptions:
+                      CursorKeyboardRotationOptions.disabled(),
+                ),
                 onMapEvent: (MapEvent event) {
                   if (event is MapEventMoveEnd ||
                       event is MapEventDoubleTapZoomEnd ||
