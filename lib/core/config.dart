@@ -12,7 +12,9 @@ class AppConfig {
   // Default map center (Germany/Belgium region)
   static const double defaultMapLatitude = 50.5;
   static const double defaultMapLongitude = 6.0;
-  static const double defaultMapZoom = 6.0;
+  /// Must be >= 7.0 so [CragProvider.visibleCrags] is non-empty before the first
+  /// map [MapEventMoveEnd] (markers use the same filter as the list viewport).
+  static const double defaultMapZoom = 7.5;
   
   // Condition calculation defaults
   static const int minTemperature = -5; // Celsius

@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
+import '../../core/config.dart';
 import '../../domain/entities/crag.dart';
 import '../../domain/entities/weather.dart';
 import '../../domain/entities/crag_source.dart';
@@ -14,7 +17,7 @@ class CragProvider with ChangeNotifier {
 
   // Viewport state
   LatLngBounds? _viewportBounds;
-  double _currentZoom = 6.0;
+  double _currentZoom = AppConfig.defaultMapZoom;
   bool _isFetchingViewport = false;
   Timer? _debounceTimer;
 
@@ -191,8 +194,13 @@ class CragProvider with ChangeNotifier {
       }
       cache.add(key);
       _crags = await _repository.getAllCrags();
-    } catch (_) {
-      // Fail silently — cached crags still visible
+    } catch (e, st) {
+      developer.log(
+        'Viewport crag fetch failed: $e',
+        name: 'CragProvider',
+        error: e,
+        stackTrace: st,
+      );
     } finally {
       _isFetchingViewport = false;
       notifyListeners();

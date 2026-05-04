@@ -45,7 +45,7 @@ flutter-pub-get:
 
 # Regenerate Android launcher mipmaps + web/favicon + web/icons from assets/branding/app_icon.png
 app-icons: flutter-pub-get
-	cd "$(ROOT_DIR)" && dart run flutter_launcher_icons
+	cd "$(ROOT_DIR)" && flutter pub run flutter_launcher_icons
 
 # Release APK (fat binary: all ABIs in one file).
 android-apk: check-android-sdk flutter-pub-get

@@ -9,12 +9,23 @@ import 'presentation/providers/condition_provider.dart';
 import 'presentation/screens/home_screen.dart';
 
 void main() {
-  // Required for sqflite on desktop and web. On Android/iOS the default factory is used.
+  WidgetsFlutterBinding.ensureInitialized();
+  // Web: IndexedDB-backed FFI. Desktop: bundled SQLite via FFI.
+  // Android/iOS: use sqflite's default native implementation — forcing
+  // databaseFactoryFfi on mobile breaks without extra native sqlite setup.
   if (kIsWeb) {
     databaseFactory = databaseFactoryFfiWeb;
   } else {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.linux:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+        sqfliteFfiInit();
+        databaseFactory = databaseFactoryFfi;
+        break;
+      default:
+        break;
+    }
   }
   runApp(const ClimbingApp());
 }
