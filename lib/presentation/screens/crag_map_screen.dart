@@ -141,7 +141,6 @@ class _CragMapScreenState extends State<CragMapScreen> {
               ),
             Positioned(
               left: 12,
-              right: 12,
               top: 12,
               child: Builder(
                 builder: (context) {
@@ -180,29 +179,6 @@ class _CragMapScreenState extends State<CragMapScreen> {
                     },
                   );
                 },
-              ),
-            ),
-            Positioned(
-              left: 12,
-              right: 12,
-              top: 62,
-              child: IgnorePointer(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      child: Text(
-                        'Available dates: next 14 days',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ),
-                ),
               ),
             ),
           ],
